@@ -1,10 +1,13 @@
-from ultralytics import YOLO
 import cv2
 
-# Load YOLO model once
-model = YOLO("models/yolov11n.pt")
+def run_detection():
+    cap = cv2.VideoCapture("videos/sample.mp4")  # path to your sample video
 
-def run_detection(frame):
-    results = model(frame, verbose=False)  
-    annotated = results[0].plot()  # draw bounding boxes
-    return annotated
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # loop video
+            continue
+
+        _, jpeg = cv2.imencode('.jpg', frame)
+        yield jpeg.tobytes()
