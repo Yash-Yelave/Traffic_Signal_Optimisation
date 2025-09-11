@@ -122,8 +122,8 @@ def dashboard_data():
 def lane_feeds():
     return jsonify(get_lane_feeds_data())
 
-def generate_frames():
-    cap = cv2.VideoCapture('videos/sample.mp4')
+def generate_frames(videosample):
+    cap = cv2.VideoCapture(videosample)
     
     while True:
         success, frame = cap.read()
@@ -141,7 +141,7 @@ def generate_frames():
 
 @app.route('/video_feed')
 def video_feed():
-    return Response(generate_frames(),
+    return Response(generate_frames('videos/sample.mp4'),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == '__main__':
