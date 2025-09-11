@@ -378,17 +378,18 @@ body {
 }
 
 .stat-value {
-    font-size: 2rem;
+    font-size: 0.85rem;
     font-weight: 700;
-    color: #667eea;
+    color: #ff4a4a;
     margin-bottom: 0.5rem;
 }
 
 .stat-label {
     font-size: 0.85rem;
-    color: #666;
+    color: #000000;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    font-style: oblique;
 }
 
 .vehicle-distribution h4 {
@@ -681,7 +682,7 @@ body {
 }
 
 .alert-message {
-    color: #333;
+    color: #ffffff;
     margin-bottom: 0.25rem;
 }
 
