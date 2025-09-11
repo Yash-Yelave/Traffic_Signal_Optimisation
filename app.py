@@ -122,8 +122,8 @@ def dashboard_data():
 def lane_feeds():
     return jsonify(get_lane_feeds_data())
 
-def generate_frames(videosample):
-    cap = cv2.VideoCapture(videosample)
+def generate_frames(video_file='videos/sample.mp4'):
+    cap = cv2.VideoCapture(video_file)
     
     while True:
         success, frame = cap.read()
@@ -139,9 +139,23 @@ def generate_frames(videosample):
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-@app.route('/video_feed')
-def video_feed():
-    return Response(generate_frames('videos/sample.mp4'),
+@app.route('/video_feed/<int:lane_id>')
+def video_feed(lane_id):
+    # Map lane IDs to video files
+    video_mapping = {
+        1: 'videos/lane1.mp4',
+        2: 'videos/lane2.mp4', 
+        3: 'videos/lane3.mp4',
+        4: 'videos/sample.mp4'  # fallback to sample.mp4 for lane 4
+    }
+    
+    video_file = video_mapping.get(lane_id, 'videos/sample.mp4')
+    return Response(generate_frames(video_file),
+                    mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/traffic_detection_feed')
+def traffic_detection_feed():
+    return Response(generate_frames('videos/traffic_detection.mp4'),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == '__main__':
