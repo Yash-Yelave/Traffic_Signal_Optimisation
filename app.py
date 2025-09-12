@@ -158,5 +158,11 @@ def traffic_detection_feed():
     return Response(generate_frames('videos/traffic_detection.mp4'),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
-if __name__ == '__main__':
-    app.run()
+# if __name__ == '__main__':
+#     app.run()
+
+if __name__ == "__main__":
+    from waitress import serve
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    serve(app, host="0.0.0.0", port=port)
