@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update dashboard data periodically
     updateDashboardData();
-    setInterval(updateDashboardData, 5000); // Update every 5 seconds
+    setInterval(updateDashboardData, 1000); // Update every 5 seconds
 
     // Update traffic light timers
     updateTrafficLights();
@@ -38,6 +38,18 @@ async function updateDashboardData() {
         document.getElementById('total-vehicles-comp').textContent = data.total_vehicles;
         document.getElementById('avg-speed-comp').textContent = data.avg_speed;
         document.getElementById('avg-congestion').textContent = data.avg_congestion + '%';
+        
+        //Alert section update
+        document.getElementById('recent_alerts_type').textContent = data.recent_alerts[0].type;
+         document.getElementById('recent_alerts_message').textContent = data.recent_alerts[0].message;
+        document.getElementById('recent_alerts_time').textContent = data.recent_alerts[0].time;
+
+        // Warning section update
+        document.getElementById('recent_warning_type').textContent = data.recent_alerts[1].type;
+        document.getElementById('recent_warning_message').textContent = data.recent_alerts[1].message;
+        document.getElementById('recent_warning_time').textContent = data.recent_alerts[1].time;
+        
+        
         
         // Update lane data
         const laneResponse = await fetch('/api/lane-feeds');

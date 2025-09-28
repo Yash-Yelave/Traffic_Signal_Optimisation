@@ -60,8 +60,13 @@ def get_dashboard_data():
         'recent_alerts': [
             {
                 'type': 'ACCIDENT',
-                'message': 'Vehicle accident detected on Lane 3',
-                'time': '2 min ago'
+                'message': 'Vehicle accident detected on Lane 2',
+                'time': '10 min ago'
+            },
+            {
+                'type': 'HIGH CONGESTION',
+                'message': 'Heavy traffic detected on Lane 1',
+                'time' : '5 min ago'
             }
         ]
     }
@@ -162,7 +167,4 @@ def traffic_detection_feed():
 #     app.run()
 
 if __name__ == "__main__":
-    from waitress import serve
-    import os
-    port = int(os.environ.get("PORT", 5000))
-    serve(app, host="0.0.0.0", port=port)
+    app.run(debug=True, host="0.0.0.0", port=5000)
