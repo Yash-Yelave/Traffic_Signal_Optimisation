@@ -368,7 +368,7 @@
                                 <div class="alert-content">
                                     <div class="alert-type" id="recent_warning_type">HIGH CONGESTION</div>
                                     <div class="alert-message" id="recent_warning_message">Heavy traffic detected on Lane 1</div>
-                                    <div class="alert-time" id="recent_warning_time">5 min ago</div>
+                                    <div class="alert-time" id="">5 min ago</div>
                                 </div>
                             </div>
                         </div>
@@ -376,58 +376,110 @@
                 </div>
 
                 <!-- Lane Usage & Performance Card -->
-                <div class="component-card">
-                    <div class="card-header">
-                        <h3><i class="fas fa-road"></i> Lane Usage & Performance</h3>
-                    </div>
-                    <div class="card-content">
-                        <div class="lane-performance">
-                            <div class="lane-item">
-                                <div class="lane-header">
-                                    <span class="lane-name">Lane 1</span>
-                                    <span class="lane-direction">North</span>
-                                    <span class="status-badge warning">WARNING</span>
-                                </div>
-                                <div class="lane-stats">
-                                    <div class="lane-stat">
-                                        <span class="value">23</span>
-                                        <span class="label">Vehicles</span>
-                                    </div>
-                                    <div class="lane-stat">
-                                        <span class="value">45</span>
-                                        <span class="label">km/h</span>
-                                    </div>
-                                    <div class="lane-stat">
-                                        <span class="value">78%</span>
-                                        <span class="label">Congestion</span>
-                                    </div>
-                                </div>
-                            </div>
+                 <div class="component-card">
+    <div class="card-header card-header-Lane-Usage">
+        <h3><i class="fas fa-road"></i> Lane Usage & Performance</h3>
+    </div>
+    <div class="card-content card-content-Lane-Usage">
+        <div class="lane-performance">
 
-                            <div class="lane-item">
-                                <div class="lane-header">
-                                    <span class="lane-name">Lane 2</span>
-                                    <span class="lane-direction">South</span>
-                                    <span class="status-badge active">ACTIVE</span>
-                                </div>
-                                <div class="lane-stats">
-                                    <div class="lane-stat">
-                                        <span class="value">15</span>
-                                        <span class="label">Vehicles</span>
-                                    </div>
-                                    <div class="lane-stat">
-                                        <span class="value">62</span>
-                                        <span class="label">km/h</span>
-                                    </div>
-                                    <div class="lane-stat">
-                                        <span class="value">34%</span>
-                                        <span class="label">Congestion</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+            <!-- Lane 1 -->
+            <div class="lane-item">
+                <div class="lane-header">
+                    <span class="lane-name">Lane 1</span>
+                    <span class="lane-direction">North</span>
+                    <span class="status-badge" id="lane1-status">WARNING</span>
+                </div>
+                <div class="lane-stats">
+                    <div class="lane-stat">
+                        <span class="value" id="lane1-vehicles">23</span>
+                        <span class="label">Vehicles</span>
+                    </div>
+                    <div class="lane-stat">
+                        <span class="value" id="lane1-speed">45</span>
+                        <span class="label">km/h</span>
+                    </div>
+                    <div class="lane-stat">
+                        <span class="value" id="lane1-traffic">78%</span>
+                        <span class="label">Congestion</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- Lane 2 -->
+            <div class="lane-item">
+                <div class="lane-header">
+                    <span class="lane-name">Lane 2</span>
+                    <span class="lane-direction">South</span>
+                    <span class="status-badge" id="lane2-status">ACTIVE</span>
+                </div>
+                <div class="lane-stats">
+                    <div class="lane-stat">
+                        <span class="value" id="lane2-vehicles">15</span>
+                        <span class="label">Vehicles</span>
+                    </div>
+                    <div class="lane-stat">
+                        <span class="value" id="lane2-speed">62</span>
+                        <span class="label">km/h</span>
+                    </div>
+                    <div class="lane-stat">
+                        <span class="value" id="lane2-traffic">34%</span>
+                        <span class="label">Congestion</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lane 3 -->
+            <div class="lane-item">
+                <div class="lane-header">
+                    <span class="lane-name">Lane 3</span>
+                    <span class="lane-direction">East</span>
+                    <span class="status-badge" id="lane3-status">INACTIVE</span>
+                </div>
+                <div class="lane-stats">
+                    <div class="lane-stat">
+                        <span class="value" id="lane3-vehicles">8</span>
+                        <span class="label">Vehicles</span>
+                    </div>
+                    <div class="lane-stat">
+                        <span class="value" id="lane3-speed">30</span>
+                        <span class="label">km/h</span>
+                    </div>
+                    <div class="lane-stat">
+                        <span class="value" id="lane3-traffic">56%</span>
+                        <span class="label">Congestion</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lane 4 -->
+            <div class="lane-item">
+                <div class="lane-header">
+                    <span class="lane-name">Lane 4</span>
+                    <span class="lane-direction">West</span>
+                    <span class="status-badge" id="lane4-status">WARNING</span>
+                </div>
+                <div class="lane-stats">
+                    <div class="lane-stat">
+                        <span class="value" id="lane4-vehicles">19</span>
+                        <span class="label">Vehicles</span>
+                    </div>
+                    <div class="lane-stat">
+                        <span class="value" id="lane4-speed">50</span>
+                        <span class="label">km/h</span>
+                    </div>
+                    <div class="lane-stat">
+                        <span class="value" id="lane4-traffic">65%</span>
+                        <span class="label">Congestion</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
             </div>
         </div>
 
