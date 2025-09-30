@@ -1,14 +1,46 @@
-# Traffic Signal Backend Module
+# Traffic Signal Backend Module - Integrated with existing app.py data
 import random
 
-# Sample data structure for lanes
-# Each lane: [lane_no, total_vehicles, big_vehicles, small_vehicles, signal_color]
+# This will be populated from your existing lane feeds data
 lanes_data = [
-    [1, 15, 5, 10, 'red'],
-    [2, 8, 2, 6, 'green'],
-    [3, 12, 4, 8, 'red'],
-    [4, 6, 1, 5, 'yellow']
+    [1, 0, 0, 0, 'red'],
+    [2, 0, 0, 0, 'green'],
+    [3, 0, 0, 0, 'red'],
+    [4, 0, 0, 0, 'yellow']
 ]
+
+def map_lane_data_to_signal_format(lane_feeds_data):
+    """
+    Converts your existing lane feeds data to traffic signal format
+    Input: lane_feeds_data from get_lane_feeds_data()
+    Output: [lane_no, total_vehicles, big_vehicles, small_vehicles, signal_color]
+    """
+    global lanes_data
+    
+    for i, lane in enumerate(lane_feeds_data):
+        if i >= 4:  # We only handle 4 lanes
+            break
+            
+        lane_no = lane['id']
+        total_vehicles = lane['vehicles']
+        
+        # Distribute vehicles into big and small (you can adjust this logic)
+        # Assuming 30% are big vehicles, 70% are small
+        big_vehicles = int(total_vehicles * 0.3)
+        small_vehicles = total_vehicles - big_vehicles
+        
+        # Determine signal color based on traffic level
+        traffic_level = lane['traffic']
+        if traffic_level > 70:
+            signal_color = 'red'  # High traffic - stop
+        elif traffic_level > 40:
+            signal_color = 'yellow'  # Medium traffic - caution
+        else:
+            signal_color = 'green'  # Low traffic - go
+            
+        lanes_data[i] = [lane_no, total_vehicles, big_vehicles, small_vehicles, signal_color]
+    
+    return lanes_data
 
 def get_lanes_data():
     """
@@ -20,7 +52,7 @@ def get_lanes_data():
 def update_signal_lights():
     """
     Simulates traffic signal changes
-    Cycles through: green -> yellow -> red
+    Note: This is called but actual signal state comes from map_lane_data_to_signal_format
     """
     global lanes_data
     
@@ -32,10 +64,8 @@ def update_signal_lights():
             break
     
     if green_lane != -1:
-        # Change green to yellow
         lanes_data[green_lane][4] = 'yellow'
     else:
-        # Find yellow light and change to red, make next lane green
         for i, lane in enumerate(lanes_data):
             if lane[4] == 'yellow':
                 lanes_data[i][4] = 'red'
@@ -45,12 +75,7 @@ def update_signal_lights():
 
 def update_vehicles():
     """
-    Simulate vehicle count changes
+    This function is no longer needed since we get real data from app.py
+    Kept for compatibility
     """
-    global lanes_data
-    
-    # Randomly update vehicle counts
-    for lane in lanes_data:
-        lane[2] = max(0, lane[2] + random.randint(-1, 2))  # big vehicles
-        lane[3] = max(0, lane[3] + random.randint(-2, 3))  # small vehicles
-        lane[1] = lane[2] + lane[3]  # total vehicles
+    pass
