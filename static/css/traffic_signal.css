@@ -287,7 +287,7 @@
 .signal-lane-label {
     position: absolute;
     background: rgba(255, 255, 255, 0.9);
-    padding: 5px 10px;
+    padding: 10px 10px;
     border-radius: 5px;
     font-size: 12px;
     font-weight: bold;
@@ -297,25 +297,25 @@
 
 .signal-north-lane .signal-lane-label {
     top: 5px;
-    left: 50%;
+    left: 70%;
     transform: translateX(-50%);
 }
 
 .signal-south-lane .signal-lane-label {
     bottom: 5px;
-    left: 50%;
+    left: 30%;
     transform: translateX(-50%);
 }
 
 .signal-east-lane .signal-lane-label {
     right: 5px;
-    top: 50%;
+    top: 65%;
     transform: translateY(-50%);
 }
 
 .signal-west-lane .signal-lane-label {
     left: 5px;
-    top: 50%;
+    top: 35%;
     transform: translateY(-50%);
 }
 

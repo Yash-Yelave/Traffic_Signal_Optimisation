@@ -3,8 +3,8 @@
 function initTrafficSignal() {
     fetchTrafficLanes();
     setInterval(updateTrafficSignal, 5000);
-    setInterval(updateTrafficVehicles, 3000);
-    setInterval(fetchTrafficLanes, 2000);
+    setInterval(updateTrafficVehicles, 5000);
+    setInterval(fetchTrafficLanes, 5000);
 }
 
 function renderTrafficLanes(lanesData) {

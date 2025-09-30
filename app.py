@@ -4,34 +4,48 @@ import json
 import random
 import time
 from datetime import datetime
-from static.modules.traffic_signal_backend import get_lanes_data, update_signal_lights, update_vehicles
+from static.modules.traffic_signal_backend import get_lanes_data, update_signal_lights, map_lane_data_to_signal_format
 app = Flask(__name__)
+# At the top with other imports
 
-
-# Traffic Signal Routes
+#traffic signal routes with these:
 @app.route('/api/lanes')
 def get_lanes():
-    """API endpoint to get current lane data"""
+    """API endpoint to get current lane data - uses real data from lane feeds"""
+    # Get your existing lane feeds data
+    lane_feeds = get_lane_feeds_data()
+    
+    # Convert to traffic signal format
+    signal_data = map_lane_data_to_signal_format(lane_feeds)
+    
     return jsonify({
-        'lanes': get_lanes_data()
+        'lanes': signal_data
     })
 
 @app.route('/api/update_signal')
 def update_signal():
     """API endpoint to update traffic signals"""
+    # Get fresh data from your existing lane feeds
+    lane_feeds = get_lane_feeds_data()
+    signal_data = map_lane_data_to_signal_format(lane_feeds)
+    
+    # Optionally apply signal cycling logic
     update_signal_lights()
+    
     return jsonify({
         'lanes': get_lanes_data()
     })
 
 @app.route('/api/update_vehicles')
 def update_vehicles_api():
-    """API endpoint to simulate vehicle count changes"""
-    update_vehicles()
+    """API endpoint to get updated vehicle data from lane feeds"""
+    # Get real-time data from your existing system
+    lane_feeds = get_lane_feeds_data()
+    signal_data = map_lane_data_to_signal_format(lane_feeds)
+    
     return jsonify({
-        'lanes': get_lanes_data()
+        'lanes': signal_data
     })
-
 
 # Sample data for the dashboard
 def get_dashboard_data():
