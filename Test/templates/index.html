@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Signal Simulation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="header">
+        <h1>🚦 Traffic Signal Simulation</h1>
+        <p>Real-time traffic intersection monitoring</p>
+    </div>
+
+
+
+    <div class="main-container">
+        <div class="intersection-container">
+            <!-- North Lane (Lane 1) -->
+            <div class="lane north-lane" id="lane-1">
+                <div class="traffic-light-pole north-light">
+                    <div class="traffic-light">
+                        <div class="light red-light"></div>
+                        <div class="light yellow-light"></div>
+                        <div class="light green-light"></div>
+                    </div>
+                </div>
+                <div class="road-section vertical">
+                    <div class="lane-marking"></div>
+                    <div class="vehicles-container" id="vehicles-1"></div>
+                </div>
+                <div class="lane-label">Lane 1 (North)</div>
+            </div>
+
+            <!-- East Lane (Lane 2) -->
+            <div class="lane east-lane" id="lane-2">
+                <div class="traffic-light-pole east-light">
+                    <div class="traffic-light horizontal">
+                        <div class="light red-light"></div>
+                        <div class="light yellow-light"></div>
+                        <div class="light green-light"></div>
+                    </div>
+                </div>
+                <div class="road-section horizontal">
+                    <div class="lane-marking"></div>
+                    <div class="vehicles-container" id="vehicles-2"></div>
+                </div>
+                <div class="lane-label">Lane 2 (East)</div>
+            </div>
+
+            <!-- South Lane (Lane 3) -->
+            <div class="lane south-lane" id="lane-3">
+                <div class="traffic-light-pole south-light">
+                    <div class="traffic-light">
+                        <div class="light red-light"></div>
+                        <div class="light yellow-light"></div>
+                        <div class="light green-light"></div>
+                    </div>
+                </div>
+                <div class="road-section vertical">
+                    <div class="lane-marking"></div>
+                    <div class="vehicles-container" id="vehicles-3"></div>
+                </div>
+                <div class="lane-label">Lane 3 (South)</div>
+            </div>
+
+            <!-- West Lane (Lane 4) -->
+            <div class="lane west-lane" id="lane-4">
+                <div class="traffic-light-pole west-light">
+                    <div class="traffic-light horizontal">
+                        <div class="light red-light"></div>
+                        <div class="light yellow-light"></div>
+                        <div class="light green-light"></div>
+                    </div>
+                </div>
+                <div class="road-section horizontal">
+                    <div class="lane-marking"></div>
+                    <div class="vehicles-container" id="vehicles-4"></div>
+                </div>
+                <div class="lane-label">Lane 4 (West)</div>
+            </div>
+
+            <!-- Center Intersection -->
+            <div class="intersection-center"></div>
+        </div>
+
+        <!-- Stats Panel -->
+        <div class="stats-panel">
+            <h3>Traffic Statistics</h3>
+            <div id="stats-container"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

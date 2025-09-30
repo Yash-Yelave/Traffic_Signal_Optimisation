@@ -1,0 +1,421 @@
+/* Traffic Signal Module Styles */
+.traffic-signal-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background: #1a1a1a;
+    border-radius: 10px;
+}
+
+.signal-header {
+    color: white;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.signal-header h3 {
+    font-size: 1.8em;
+    margin-bottom: 5px;
+}
+
+.signal-header p {
+    font-size: 0.9em;
+    color: #888;
+}
+
+.signal-main-container {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+}
+
+.signal-intersection-container {
+    position: relative;
+    width: 600px;
+    height: 600px;
+    background: #0a0a0a;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    border: 2px solid #333;
+}
+
+/* Roads */
+.signal-road-section {
+    position: absolute;
+    background: #2a2a2a;
+}
+
+.signal-road-section.vertical {
+    width: 120px;
+    height: 220px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.signal-road-section.horizontal {
+    width: 220px;
+    height: 120px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Lane positioning */
+.signal-north-lane .signal-road-section {
+    top: 20px;
+}
+
+.signal-south-lane .signal-road-section {
+    bottom: 20px;
+}
+
+.signal-east-lane .signal-road-section {
+    right: 20px;
+}
+
+.signal-west-lane .signal-road-section {
+    left: 20px;
+}
+
+/* Lane markings */
+.signal-lane-marking {
+    position: absolute;
+    background: repeating-linear-gradient(
+        to bottom,
+        transparent,
+        transparent 10px,
+        #fff 10px,
+        #fff 20px
+    );
+    width: 2px;
+    height: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.horizontal .signal-lane-marking {
+    background: repeating-linear-gradient(
+        to right,
+        transparent,
+        transparent 10px,
+        #fff 10px,
+        #fff 20px
+    );
+    width: 100%;
+    height: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Center Intersection */
+.signal-intersection-center {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    background: #333;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: 3px dashed #ffeb3b;
+}
+
+/* Traffic Lights */
+.signal-traffic-light-pole {
+    position: absolute;
+    z-index: 10;
+}
+
+.signal-north-light {
+    top: 250px;
+    left: 50%;
+    transform: translateX(70px);
+}
+
+.signal-south-light {
+    bottom: 250px;
+    left: 50%;
+    transform: translateX(-130px);
+}
+
+.signal-east-light {
+    right: 250px;
+    top: 50%;
+    transform: translateY(-130px);
+}
+
+.signal-west-light {
+    left: 250px;
+    top: 50%;
+    transform: translateY(70px);
+}
+
+.signal-traffic-light {
+    background: #111;
+    border: 3px solid #000;
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.signal-traffic-light.horizontal {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+}
+
+.signal-traffic-light:not(.horizontal) {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.signal-light {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: #333;
+    border: 2px solid #000;
+    transition: all 0.3s ease;
+}
+
+.signal-light.active.red-light {
+    background: #ff4757;
+    box-shadow: 0 0 15px #ff4757, 0 0 30px #ff4757;
+}
+
+.signal-light.active.yellow-light {
+    background: #ffa502;
+    box-shadow: 0 0 15px #ffa502, 0 0 30px #ffa502;
+}
+
+.signal-light.active.green-light {
+    background: #26de81;
+    box-shadow: 0 0 15px #26de81, 0 0 30px #26de81;
+}
+
+/* Vehicles Container */
+.signal-vehicles-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    padding: 10px;
+    gap: 5px;
+    overflow: hidden;
+}
+
+.signal-north-lane .signal-vehicles-container,
+.signal-south-lane .signal-vehicles-container {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.signal-east-lane .signal-vehicles-container,
+.signal-west-lane .signal-vehicles-container {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.signal-south-lane .signal-vehicles-container {
+    flex-direction: column-reverse;
+    justify-content: flex-start;
+}
+
+.signal-west-lane .signal-vehicles-container {
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+}
+
+/* Vehicle Boxes */
+.signal-vehicle {
+    border-radius: 4px;
+    border: 2px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: white;
+    font-weight: bold;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.signal-big-vehicle {
+    background: #3742fa;
+    border-color: #2e3aaf;
+}
+
+.signal-small-vehicle {
+    background: #70a1ff;
+    border-color: #5589d8;
+}
+
+/* Vertical lanes */
+.signal-north-lane .signal-big-vehicle,
+.signal-south-lane .signal-big-vehicle {
+    width: 35px;
+    height: 45px;
+}
+
+.signal-north-lane .signal-small-vehicle,
+.signal-south-lane .signal-small-vehicle {
+    width: 30px;
+    height: 32px;
+}
+
+/* Horizontal lanes */
+.signal-east-lane .signal-big-vehicle,
+.signal-west-lane .signal-big-vehicle {
+    width: 45px;
+    height: 35px;
+}
+
+.signal-east-lane .signal-small-vehicle,
+.signal-west-lane .signal-small-vehicle {
+    width: 32px;
+    height: 30px;
+}
+
+/* Lane Labels */
+.signal-lane-label {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #333;
+    z-index: 5;
+}
+
+.signal-north-lane .signal-lane-label {
+    top: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.signal-south-lane .signal-lane-label {
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.signal-east-lane .signal-lane-label {
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.signal-west-lane .signal-lane-label {
+    left: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Stats Panel */
+.signal-stats-panel {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    min-width: 300px;
+    max-width: 400px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.signal-stats-panel h3 {
+    margin-bottom: 15px;
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+}
+
+.signal-stat-item {
+    background: #f8f9fa;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+}
+
+.signal-stat-item h4 {
+    color: #2c3e50;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.signal-stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 13px;
+}
+
+.signal-stat-label {
+    color: #666;
+}
+
+.signal-stat-value {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.signal-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-left: 5px;
+}
+
+.signal-indicator.signal-red {
+    background: #ff4757;
+}
+
+.signal-indicator.signal-yellow {
+    background: #ffa502;
+}
+
+.signal-indicator.signal-green {
+    background: #26de81;
+}
+
+@media (max-width: 1024px) {
+    .signal-main-container {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .signal-intersection-container {
+        width: 500px;
+        height: 500px;
+    }
+}
+
+@media (max-width: 768px) {
+    .signal-intersection-container {
+        width: 400px;
+        height: 400px;
+    }
+    
+    .signal-road-section.vertical {
+        width: 90px;
+        height: 160px;
+    }
+    
+    .signal-road-section.horizontal {
+        width: 160px;
+        height: 90px;
+    }
+    
+    .signal-intersection-center {
+        width: 90px;
+        height: 90px;
+    }
+}

@@ -7,7 +7,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='components.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/traffic_signal.css') }}">
 </head>
+<script src="{{ url_for('static', filename='js/traffic_signal.js') }}"></script>
 <body>
     <!-- Header -->
     <header class="header">
@@ -73,8 +75,8 @@
                 <div class="camera-feed lane-1">
                     <div class="camera-header">
                         <span class="lane-label">Lane 1</span>
-                        <span class="status-indicator warning">
-                            <i class="fas fa-exclamation-triangle"></i> WARNING
+                        <span class="status-indicator active" id="lane2-status">
+                            <i class="fas fa-check-circle"></i> ACTIVE
                         </span>
                         <span class="direction">North</span>
                     </div>
@@ -103,7 +105,7 @@
                 <div class="camera-feed lane-2">
                     <div class="camera-header">
                         <span class="lane-label">Lane 2</span>
-                        <span class="status-indicator active">
+                        <span class="status-indicator active" id="lane2-status">
                             <i class="fas fa-check-circle"></i> ACTIVE
                         </span>
                         <span class="direction">South</span>
@@ -219,7 +221,7 @@
                     <div class="card-content">
                         <div class="stats-row">
                             <div class="stat-box">
-                                <div class="stat-value" id="total-vehicles-comp">65</div>
+                                <div class="stat-value" id="total-vehicles">65</div>
                                 <div class="stat-label">Total Vehicles</div>
                             </div>
                             <div class="stat-box">
@@ -486,36 +488,89 @@
         <!-- Traffic Detection View Tab -->
         <div id="traffic-detection" class="tab-content">
             <div class="tab-header">
-                <h2><i class="fas fa-eye"></i> Traffic Detection View</h2>
+                <h2><i class="fas fa-eye"></i> Traffic Detection View - Live Intersection Monitoring</h2>
             </div>
-            <div class="detection-container">
-                <div class="detection-feed">
-                    <div class="detection-header">
-                        <h3>AI Traffic Analysis</h3>
-                        <div class="detection-controls">
-                            <button class="control-btn active">Real-time Detection</button>
-                            <button class="control-btn">Object Tracking</button>
-                            <button class="control-btn">Speed Analysis</button>
-                        </div>
-                    </div>
-                    <div class="detection-video">
-                        <img src="{{ url_for('traffic_detection_feed') }}" alt="Traffic Detection Feed" class="detection-stream">
-                        <div class="detection-overlay">
-                            <div class="detection-stats">
-                                <div class="detection-stat">
-                                    <span class="stat-label">Objects Detected:</span>
-                                    <span class="stat-value">12</span>
-                                </div>
-                                <div class="detection-stat">
-                                    <span class="stat-label">Average Speed:</span>
-                                    <span class="stat-value">45 km/h</span>
-                                </div>
-                                <div class="detection-stat">
-                                    <span class="stat-label">Traffic Density:</span>
-                                    <span class="stat-value">Medium</span>
+            
+            <div class="traffic-signal-wrapper">
+                <div class="signal-header">
+                    <h3>Traffic Intersection Simulation</h3>
+                    <p>AI-powered traffic signal management system</p>
+                </div>
+
+                <div class="signal-main-container">
+                    <div class="signal-intersection-container">
+                        <!-- North Lane (Lane 1) -->
+                        <div class="signal-lane signal-north-lane" id="signal-lane-1">
+                            <div class="signal-traffic-light-pole signal-north-light">
+                                <div class="signal-traffic-light">
+                                    <div class="signal-light red-light"></div>
+                                    <div class="signal-light yellow-light"></div>
+                                    <div class="signal-light green-light"></div>
                                 </div>
                             </div>
+                            <div class="signal-road-section vertical">
+                                <div class="signal-lane-marking"></div>
+                                <div class="signal-vehicles-container" id="signal-vehicles-1"></div>
+                            </div>
+                            <div class="signal-lane-label">Lane 1 (North)</div>
                         </div>
+
+                        <!-- East Lane (Lane 2) -->
+                        <div class="signal-lane signal-east-lane" id="signal-lane-2">
+                            <div class="signal-traffic-light-pole signal-east-light">
+                                <div class="signal-traffic-light horizontal">
+                                    <div class="signal-light red-light"></div>
+                                    <div class="signal-light yellow-light"></div>
+                                    <div class="signal-light green-light"></div>
+                                </div>
+                            </div>
+                            <div class="signal-road-section horizontal">
+                                <div class="signal-lane-marking"></div>
+                                <div class="signal-vehicles-container" id="signal-vehicles-2"></div>
+                            </div>
+                            <div class="signal-lane-label">Lane 2 (East)</div>
+                        </div>
+
+                        <!-- South Lane (Lane 3) -->
+                        <div class="signal-lane signal-south-lane" id="signal-lane-3">
+                            <div class="signal-traffic-light-pole signal-south-light">
+                                <div class="signal-traffic-light">
+                                    <div class="signal-light red-light"></div>
+                                    <div class="signal-light yellow-light"></div>
+                                    <div class="signal-light green-light"></div>
+                                </div>
+                            </div>
+                            <div class="signal-road-section vertical">
+                                <div class="signal-lane-marking"></div>
+                                <div class="signal-vehicles-container" id="signal-vehicles-3"></div>
+                            </div>
+                            <div class="signal-lane-label">Lane 3 (South)</div>
+                        </div>
+
+                        <!-- West Lane (Lane 4) -->
+                        <div class="signal-lane signal-west-lane" id="signal-lane-4">
+                            <div class="signal-traffic-light-pole signal-west-light">
+                                <div class="signal-traffic-light horizontal">
+                                    <div class="signal-light red-light"></div>
+                                    <div class="signal-light yellow-light"></div>
+                                    <div class="signal-light green-light"></div>
+                                </div>
+                            </div>
+                            <div class="signal-road-section horizontal">
+                                <div class="signal-lane-marking"></div>
+                                <div class="signal-vehicles-container" id="signal-vehicles-4"></div>
+                            </div>
+                            <div class="signal-lane-label">Lane 4 (West)</div>
+                        </div>
+
+                        <!-- Center Intersection -->
+                        <div class="signal-intersection-center"></div>
+                    </div>
+
+                    <!-- Stats Panel -->
+                    <div class="signal-stats-panel">
+                        <h3>Traffic Statistics</h3>
+                        <div id="signal-stats-container"></div>
                     </div>
                 </div>
             </div>
