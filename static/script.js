@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update dashboard data periodically
     updateDashboardData();
-    setInterval(updateDashboardData, 1000); // Update every 5 seconds
+    setInterval(updateDashboardData, 3000); // Update every 3 seconds
 
     // Update traffic light timers
     updateTrafficLights();
@@ -32,24 +32,42 @@ async function updateDashboardData() {
         const response = await fetch('/api/dashboard-data');
         const data = await response.json();
         
-        // Update vehicle statistics
-        document.getElementById('total-vehicles').textContent = data.total_vehicles;
-        document.getElementById('avg-speed').textContent = data.avg_speed;
-        document.getElementById('total-vehicles-comp').textContent = data.total_vehicles;
-        document.getElementById('avg-speed-comp').textContent = data.avg_speed;
-        document.getElementById('avg-congestion').textContent = data.avg_congestion + '%';
+        // Update vehicle statistics in Live Camera tab
+        const totalVehiclesElem = document.querySelector('#live-camera #total-vehicles');
+        const avgSpeedElem = document.querySelector('#live-camera #avg-speed');
         
-        //Alert section update
-        document.getElementById('recent_alerts_type').textContent = data.recent_alerts[0].type;
-         document.getElementById('recent_alerts_message').textContent = data.recent_alerts[0].message;
-        document.getElementById('recent_alerts_time').textContent = data.recent_alerts[0].time;
-
-        // Warning section update
-        document.getElementById('recent_warning_type').textContent = data.recent_alerts[1].type;
-        document.getElementById('recent_warning_message').textContent = data.recent_alerts[1].message;
-        document.getElementById('recent_warning_time').textContent = data.recent_alerts[1].time;
+        if (totalVehiclesElem) totalVehiclesElem.textContent = data.total_vehicles;
+        if (avgSpeedElem) avgSpeedElem.textContent = data.avg_speed;
         
+        // Update vehicle statistics in Manageable Components tab
+        const totalVehiclesCompElem = document.querySelector('#manageable-components #total-vehicles');
+        const avgSpeedCompElem = document.getElementById('avg-speed-comp');
+        const avgCongestionElem = document.getElementById('avg-congestion');
         
+        if (totalVehiclesCompElem) totalVehiclesCompElem.textContent = data.total_vehicles;
+        if (avgSpeedCompElem) avgSpeedCompElem.textContent = data.avg_speed;
+        if (avgCongestionElem) avgCongestionElem.textContent = data.avg_congestion + '%';
+        
+        // Update alerts
+        if (data.recent_alerts && data.recent_alerts.length > 0) {
+            const alertTypeElem = document.getElementById('recent_alerts_type');
+            const alertMessageElem = document.getElementById('recent_alerts_message');
+            const alertTimeElem = document.getElementById('recent_alerts_time');
+            
+            if (alertTypeElem) alertTypeElem.textContent = data.recent_alerts[0].type;
+            if (alertMessageElem) alertMessageElem.textContent = data.recent_alerts[0].message;
+            if (alertTimeElem) alertTimeElem.textContent = data.recent_alerts[0].time;
+            
+            if (data.recent_alerts.length > 1) {
+                const warningTypeElem = document.getElementById('recent_warning_type');
+                const warningMessageElem = document.getElementById('recent_warning_message');
+                const warningTimeElem = document.getElementById('recent_warning_time');
+                
+                if (warningTypeElem) warningTypeElem.textContent = data.recent_alerts[1].type;
+                if (warningMessageElem) warningMessageElem.textContent = data.recent_alerts[1].message;
+                if (warningTimeElem) warningTimeElem.textContent = data.recent_alerts[1].time;
+            }
+        }
         
         // Update lane data
         const laneResponse = await fetch('/api/lane-feeds');
@@ -57,39 +75,77 @@ async function updateDashboardData() {
         
         laneData.forEach((lane, index) => {
             const laneNum = index + 1;
-            const vehiclesEl = document.getElementById(`lane${laneNum}-vehicles`);
-            const speedEl = document.getElementById(`lane${laneNum}-speed`);
-            const trafficEl = document.getElementById(`lane${laneNum}-traffic`);
             
-            if (vehiclesEl) vehiclesEl.textContent = lane.vehicles;
-            if (speedEl) speedEl.textContent = lane.speed;
-            if (trafficEl) {
-                trafficEl.textContent = lane.traffic + '%';
+            // Update camera feed stats (in Live Camera tab)
+            const cameraVehiclesElem = document.querySelector(`#live-camera #lane${laneNum}-vehicles`);
+            const cameraSpeedElem = document.querySelector(`#live-camera #lane${laneNum}-speed`);
+            const cameraTrafficElem = document.querySelector(`#live-camera #lane${laneNum}-traffic`);
+            
+            if (cameraVehiclesElem) cameraVehiclesElem.textContent = lane.vehicles;
+            if (cameraSpeedElem) cameraSpeedElem.textContent = lane.speed;
+            if (cameraTrafficElem) {
+                cameraTrafficElem.textContent = lane.traffic + '%';
                 
                 // Update traffic level classes
-                trafficEl.className = 'value';
+                cameraTrafficElem.className = 'value';
                 if (lane.traffic > 70) {
-                    trafficEl.classList.add('traffic-high');
+                    cameraTrafficElem.classList.add('traffic-high');
                 } else if (lane.traffic > 40) {
-                    trafficEl.classList.add('traffic-medium');
+                    cameraTrafficElem.classList.add('traffic-medium');
                 } else {
-                    trafficEl.classList.add('traffic-low');
+                    cameraTrafficElem.classList.add('traffic-low');
+                }
+            }
+            
+            // Update Lane Usage & Performance section (in Manageable Components tab)
+            const laneVehiclesElem = document.querySelector(`#manageable-components .lane-item:nth-child(${laneNum}) .lane-stat:nth-child(1) .value`);
+            const laneSpeedElem = document.querySelector(`#manageable-components .lane-item:nth-child(${laneNum}) .lane-stat:nth-child(2) .value`);
+            const laneTrafficElem = document.querySelector(`#manageable-components .lane-item:nth-child(${laneNum}) .lane-stat:nth-child(3) .value`);
+            const laneStatusElem = document.querySelector(`#manageable-components .lane-item:nth-child(${laneNum}) .status-badge`);
+            
+            if (laneVehiclesElem) laneVehiclesElem.textContent = lane.vehicles;
+            if (laneSpeedElem) laneSpeedElem.textContent = lane.speed;
+            if (laneTrafficElem) laneTrafficElem.textContent = lane.traffic + '%';
+            
+            if (laneStatusElem) {
+                laneStatusElem.textContent = lane.status;
+                // Update status badge classes
+                laneStatusElem.className = 'status-badge';
+                if (lane.status === 'WARNING') {
+                    laneStatusElem.classList.add('warning');
+                } else if (lane.status === 'ACTIVE') {
+                    laneStatusElem.classList.add('active');
+                } else if (lane.status === 'ERROR') {
+                    laneStatusElem.classList.add('error');
                 }
             }
         });
+
+        //lane alerts
         
         // Update vehicle distribution bars
         const distribution = data.vehicle_distribution;
-        document.querySelector('.bar-cars').style.width = distribution.cars + '%';
-        document.querySelector('.bar-trucks').style.width = distribution.trucks + '%';
-        document.querySelector('.bar-buses').style.width = distribution.buses + '%';
-        document.querySelector('.bar-bikes').style.width = distribution.bikes + '%';
+        const barCars = document.querySelector('.bar-cars');
+        const barTrucks = document.querySelector('.bar-trucks');
+        const barBuses = document.querySelector('.bar-buses');
+        const barBikes = document.querySelector('.bar-bikes');
         
-        // Update bar values
-        document.querySelector('.bar-cars').parentElement.nextElementSibling.textContent = distribution.cars + '%';
-        document.querySelector('.bar-trucks').parentElement.nextElementSibling.textContent = distribution.trucks + '%';
-        document.querySelector('.bar-buses').parentElement.nextElementSibling.textContent = distribution.buses + '%';
-        document.querySelector('.bar-bikes').parentElement.nextElementSibling.textContent = distribution.bikes + '%';
+        if (barCars) {
+            barCars.style.width = distribution.cars + '%';
+            barCars.parentElement.nextElementSibling.textContent = distribution.cars + '%';
+        }
+        if (barTrucks) {
+            barTrucks.style.width = distribution.trucks + '%';
+            barTrucks.parentElement.nextElementSibling.textContent = distribution.trucks + '%';
+        }
+        if (barBuses) {
+            barBuses.style.width = distribution.buses + '%';
+            barBuses.parentElement.nextElementSibling.textContent = distribution.buses + '%';
+        }
+        if (barBikes) {
+            barBikes.style.width = distribution.bikes + '%';
+            barBikes.parentElement.nextElementSibling.textContent = distribution.bikes + '%';
+        }
         
     } catch (error) {
         console.error('Error updating dashboard data:', error);

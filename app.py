@@ -4,8 +4,34 @@ import json
 import random
 import time
 from datetime import datetime
-
+from static.modules.traffic_signal_backend import get_lanes_data, update_signal_lights, update_vehicles
 app = Flask(__name__)
+
+
+# Traffic Signal Routes
+@app.route('/api/lanes')
+def get_lanes():
+    """API endpoint to get current lane data"""
+    return jsonify({
+        'lanes': get_lanes_data()
+    })
+
+@app.route('/api/update_signal')
+def update_signal():
+    """API endpoint to update traffic signals"""
+    update_signal_lights()
+    return jsonify({
+        'lanes': get_lanes_data()
+    })
+
+@app.route('/api/update_vehicles')
+def update_vehicles_api():
+    """API endpoint to simulate vehicle count changes"""
+    update_vehicles()
+    return jsonify({
+        'lanes': get_lanes_data()
+    })
+
 
 # Sample data for the dashboard
 def get_dashboard_data():
@@ -77,7 +103,7 @@ def get_lane_feeds_data():
             'id': 1,
             'name': 'Lane 1',
             'status': 'WARNING',
-            'direction': 'North',
+            'direction': 'so',
             'vehicles': random.randint(20, 30),
             'speed': random.randint(40, 50),
             'traffic': random.randint(70, 85),
@@ -86,7 +112,7 @@ def get_lane_feeds_data():
         {
             'id': 2,
             'name': 'Lane 2',
-            'status': 'ACTIVE',
+            'status': 'Yash',
             'direction': 'South',
             'vehicles': random.randint(10, 20),
             'speed': random.randint(55, 70),
