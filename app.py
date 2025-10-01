@@ -3,10 +3,51 @@ import cv2
 import json
 import random
 import time
+import threading
 from datetime import datetime
 from static.modules.traffic_signal_backend import get_lanes_data, update_signal_lights, map_lane_data_to_signal_format
 app = Flask(__name__)
-# At the top with other imports
+
+# Global variables for shared camera stream
+esp32_cap = None
+esp32_frame = None
+esp32_lock = threading.Lock()
+capture_thread = None
+is_capturing = False
+
+def capture_esp32_stream():
+    """Background thread to continuously capture frames from ESP32"""
+    global esp32_cap, esp32_frame, is_capturing
+    
+    esp32_url = 'http://192.168.72.86:81/stream'
+    esp32_cap = cv2.VideoCapture(esp32_url)
+    esp32_cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+    
+    while is_capturing:
+        success, frame = esp32_cap.read()
+        if success:
+            with esp32_lock:
+                esp32_frame = frame.copy()
+        else:
+            # Try to reconnect
+            esp32_cap.release()
+            time.sleep(1)
+            esp32_cap = cv2.VideoCapture(esp32_url)
+            esp32_cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        
+        time.sleep(0.03)  # ~30 FPS
+
+def start_capture_thread():
+    """Start the background capture thread"""
+    global capture_thread, is_capturing
+    
+    if capture_thread is None or not capture_thread.is_alive():
+        is_capturing = True
+        capture_thread = threading.Thread(target=capture_esp32_stream, daemon=True)
+        capture_thread.start()
+
+# Start capturing when app starts
+start_capture_thread()
 
 #traffic signal routes with these:
 @app.route('/api/lanes')
@@ -167,44 +208,36 @@ def dashboard_data():
 def lane_feeds():
     return jsonify(get_lane_feeds_data())
 
-def generate_frames(video_file='videos/sample.mp4'):
-    cap = cv2.VideoCapture(video_file)
+def generate_frames():
+    """Generate frames from shared ESP32 camera feed"""
+    global esp32_frame
     
     while True:
-        success, frame = cap.read()
-        if not success:
-            # Restart video when it ends
-            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            continue
-        else:
+        if esp32_frame is not None:
+            with esp32_lock:
+                frame = esp32_frame.copy()
+            
             # Resize frame for web display
             frame = cv2.resize(frame, (640, 360))
             ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
+            frame_bytes = buffer.tobytes()
+            
             yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+        else:
+            time.sleep(0.1)
 
 @app.route('/video_feed/<int:lane_id>')
 def video_feed(lane_id):
-    # Map lane IDs to video files
-    video_mapping = {
-        1: 'videos/lane1.mp4',
-        2: 'videos/lane2.mp4', 
-        3: 'videos/lane3.mp4',
-        4: 'videos/sample.mp4'  # fallback to sample.mp4 for lane 4
-    }
-    
-    video_file = video_mapping.get(lane_id, 'videos/sample.mp4')
-    return Response(generate_frames(video_file),
+    """All lanes use the same ESP32 cam stream from shared capture"""
+    return Response(generate_frames(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/traffic_detection_feed')
 def traffic_detection_feed():
-    return Response(generate_frames('videos/traffic_detection.mp4'),
+    """Traffic detection feed also uses shared ESP32 stream"""
+    return Response(generate_frames(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
-
-# if __name__ == '__main__':
-#     app.run()
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
