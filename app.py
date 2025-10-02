@@ -5,6 +5,7 @@ import random
 import time
 import threading
 from datetime import datetime
+import requests
 from static.modules.traffic_signal_backend import get_lanes_data, update_signal_lights, map_lane_data_to_signal_format
 app = Flask(__name__)
 
@@ -14,6 +15,32 @@ esp32_frame = None
 esp32_lock = threading.Lock()
 capture_thread = None
 is_capturing = False
+
+
+
+# ESP32-CAM IP address
+ESP32_IP = "192.168.72.86"
+
+# Flash control route for ESP32
+@app.route('/flash/<action>')
+def control_flash(action):
+    """Control the ESP32-CAM flash LED"""
+    try:
+        if action == 'on':
+            response = requests.get(f'http://{ESP32_IP}/control?var=led_intensity&val=255', timeout=5)
+        elif action == 'off':
+            response = requests.get(f'http://{ESP32_IP}/control?var=led_intensity&val=0', timeout=5)
+        else:
+            return jsonify({'status': 'error', 'message': 'Invalid action'}), 400
+        
+        if response.status_code == 200:
+            return jsonify({'status': 'success', 'message': f'Flash turned {action}'})
+        else:
+            return jsonify({'status': 'error', 'message': 'ESP32 responded with error'}), 500
+            
+    except requests.exceptions.RequestException as e:
+        return jsonify({'status': 'error', 'message': f'Connection error: {str(e)}'}), 500
+
 
 def capture_esp32_stream():
     """Background thread to continuously capture frames from ESP32"""

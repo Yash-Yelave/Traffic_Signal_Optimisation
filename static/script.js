@@ -207,3 +207,34 @@ function showNotification(message, type = 'info') {
         }, 300);
     }, 3000);
 }
+
+// Flash control buttons
+function controlFlash(action) {
+    const statusDiv = document.getElementById('flashStatus');
+    
+    fetch(`/flash/${action}`)
+        .then(response => response.json())
+        .then(data => {
+            statusDiv.style.display = 'block';
+            if (data.status === 'success') {
+                statusDiv.className = 'flash-status success';
+                statusDiv.textContent = `✓ ${data.message}`;
+            } else {
+                statusDiv.className = 'flash-status error';
+                statusDiv.textContent = `✗ ${data.message}`;
+            }
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        })
+        .catch(error => {
+            statusDiv.style.display = 'block';
+            statusDiv.className = 'flash-status error';
+            statusDiv.textContent = `✗ Connection error: ${error.message}`;
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        });
+}
