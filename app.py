@@ -1,5 +1,5 @@
 from flask import Flask, render_template, jsonify, Response
-import cv2
+# Removed 'import cv2' as we are no longer using it for stream capture due to compatibility issues
 import json
 import random
 import time
@@ -10,16 +10,17 @@ from static.modules.traffic_signal_backend import get_lanes_data, update_signal_
 app = Flask(__name__)
 
 # Global variables for shared camera stream
-esp32_cap = None
-esp32_frame = None
+# esp32_cap = None # Removed OpenCV VideoCapture object
+esp32_frame = None # Holds raw JPEG bytes now
 esp32_lock = threading.Lock()
 capture_thread = None
 is_capturing = False
 
 
-
 # ESP32-CAM IP address
 ESP32_IP = "192.168.72.86"
+# Combined stream URL constant for requests
+ESP32_STREAM_URL = f'http://{ESP32_IP}:81/stream'
 
 # Flash control route for ESP32
 @app.route('/flash/<action>')
@@ -27,7 +28,8 @@ def control_flash(action):
     """Control the ESP32-CAM flash LED"""
     try:
         if action == 'on':
-            response = requests.get(f'http://{ESP32_IP}/control?var=led_intensity&val=255', timeout=5)
+            # FIX: Reduced intensity from 255 to 64. Max intensity often causes the camera to brown-out and freeze.
+            response = requests.get(f'http://{ESP32_IP}/control?var=led_intensity&val=64', timeout=5)
         elif action == 'off':
             response = requests.get(f'http://{ESP32_IP}/control?var=led_intensity&val=0', timeout=5)
         else:
@@ -43,26 +45,49 @@ def control_flash(action):
 
 
 def capture_esp32_stream():
-    """Background thread to continuously capture frames from ESP32"""
-    global esp32_cap, esp32_frame, is_capturing
-    
-    esp32_url = 'http://192.168.72.86:81/stream'
-    esp32_cap = cv2.VideoCapture(esp32_url)
-    esp32_cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+    """Background thread to continuously capture frames from ESP32 using requests to handle raw MJPEG stream."""
+    global esp32_frame, is_capturing
     
     while is_capturing:
-        success, frame = esp32_cap.read()
-        if success:
-            with esp32_lock:
-                esp32_frame = frame.copy()
-        else:
-            # Try to reconnect
-            esp32_cap.release()
-            time.sleep(1)
-            esp32_cap = cv2.VideoCapture(esp32_url)
-            esp32_cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-        
-        time.sleep(0.03)  # ~30 FPS
+        try:
+            # Open the stream connection using requests (robust against OpenCV issues)
+            response = requests.get(ESP32_STREAM_URL, stream=True, timeout=5)
+            
+            if response.status_code == 200:
+                # Buffer to hold incomplete JPEG data chunks
+                bytes_buffer = b''
+                
+                # Iterate over the raw content chunks
+                for chunk in response.iter_content(chunk_size=1024):
+                    if not is_capturing: break
+
+                    bytes_buffer += chunk
+                    
+                    # Look for JPEG Start of Image (SOI: 0xFFD8) and End of Image (EOI: 0xFFD9) markers
+                    a = bytes_buffer.find(b'\xff\xd8')
+                    b = bytes_buffer.find(b'\xff\xd9')
+                    
+                    if a != -1 and b != -1 and b > a:
+                        # Found a complete JPEG frame
+                        jpeg_data = bytes_buffer[a:b+2]
+                        
+                        with esp32_lock:
+                            esp32_frame = jpeg_data
+                        
+                        # Discard the successfully processed frame data from the buffer
+                        bytes_buffer = bytes_buffer[b+2:]
+                        
+                    time.sleep(0.001) # Minimal sleep to yield execution
+            else:
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] Stream failed with HTTP status: {response.status_code}. Retrying in 2s.")
+                time.sleep(2)
+                
+        except requests.exceptions.RequestException as e:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] Connection error in background thread: {e}. Retrying in 3s.")
+            time.sleep(3)
+            
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Background capture thread stopped.")
+
 
 def start_capture_thread():
     """Start the background capture thread"""
@@ -236,23 +261,21 @@ def lane_feeds():
     return jsonify(get_lane_feeds_data())
 
 def generate_frames():
-    """Generate frames from shared ESP32 camera feed"""
+    """Generate frames from shared ESP32 camera feed (raw JPEG data from requests)"""
     global esp32_frame
     
     while True:
         if esp32_frame is not None:
             with esp32_lock:
-                frame = esp32_frame.copy()
+                frame_bytes = esp32_frame # Frame is already raw JPEG bytes from the requests stream
             
-            # Resize frame for web display
-            frame = cv2.resize(frame, (640, 360))
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame_bytes = buffer.tobytes()
-            
+            # Yield the pre-encoded JPEG bytes for the MJPEG stream
+            # We skip cv2.imencode and cv2.resize since we are delivering the raw bytes
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
         else:
-            time.sleep(0.1)
+            # FIX: Minimized sleep to reduce client-side waiting latency.
+            time.sleep(0.01)
 
 @app.route('/video_feed/<int:lane_id>')
 def video_feed(lane_id):
