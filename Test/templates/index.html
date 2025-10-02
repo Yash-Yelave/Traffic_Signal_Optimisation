@@ -3,94 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Traffic Signal Simulation</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>ESP32-CAM Flash Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .camera-feed {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-on {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-on:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-off {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-off:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 242, 254, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .info {
+            text-align: center;
+            color: #666;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .esp-link {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .esp-link:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🚦 Traffic Signal Simulation</h1>
-        <p>Real-time traffic intersection monitoring</p>
-    </div>
-
-
-
-    <div class="main-container">
-        <div class="intersection-container">
-            <!-- North Lane (Lane 1) -->
-            <div class="lane north-lane" id="lane-1">
-                <div class="traffic-light-pole north-light">
-                    <div class="traffic-light">
-                        <div class="light red-light"></div>
-                        <div class="light yellow-light"></div>
-                        <div class="light green-light"></div>
-                    </div>
-                </div>
-                <div class="road-section vertical">
-                    <div class="lane-marking"></div>
-                    <div class="vehicles-container" id="vehicles-1"></div>
-                </div>
-                <div class="lane-label">Lane 1 (North)</div>
-            </div>
-
-            <!-- East Lane (Lane 2) -->
-            <div class="lane east-lane" id="lane-2">
-                <div class="traffic-light-pole east-light">
-                    <div class="traffic-light horizontal">
-                        <div class="light red-light"></div>
-                        <div class="light yellow-light"></div>
-                        <div class="light green-light"></div>
-                    </div>
-                </div>
-                <div class="road-section horizontal">
-                    <div class="lane-marking"></div>
-                    <div class="vehicles-container" id="vehicles-2"></div>
-                </div>
-                <div class="lane-label">Lane 2 (East)</div>
-            </div>
-
-            <!-- South Lane (Lane 3) -->
-            <div class="lane south-lane" id="lane-3">
-                <div class="traffic-light-pole south-light">
-                    <div class="traffic-light">
-                        <div class="light red-light"></div>
-                        <div class="light yellow-light"></div>
-                        <div class="light green-light"></div>
-                    </div>
-                </div>
-                <div class="road-section vertical">
-                    <div class="lane-marking"></div>
-                    <div class="vehicles-container" id="vehicles-3"></div>
-                </div>
-                <div class="lane-label">Lane 3 (South)</div>
-            </div>
-
-            <!-- West Lane (Lane 4) -->
-            <div class="lane west-lane" id="lane-4">
-                <div class="traffic-light-pole west-light">
-                    <div class="traffic-light horizontal">
-                        <div class="light red-light"></div>
-                        <div class="light yellow-light"></div>
-                        <div class="light green-light"></div>
-                    </div>
-                </div>
-                <div class="road-section horizontal">
-                    <div class="lane-marking"></div>
-                    <div class="vehicles-container" id="vehicles-4"></div>
-                </div>
-                <div class="lane-label">Lane 4 (West)</div>
-            </div>
-
-            <!-- Center Intersection -->
-            <div class="intersection-center"></div>
+    <div class="container">
+        <h1>🎥 ESP32-CAM Flash Control</h1>
+        
+        <img src="http://{{ esp32_ip }}:81/stream" class="camera-feed" alt="ESP32-CAM Feed">
+        
+        <div class="controls">
+            <button class="btn btn-on" onclick="controlFlash('on')">💡 Flash ON</button>
+            <button class="btn btn-off" onclick="controlFlash('off')">🌙 Flash OFF</button>
         </div>
 
-        <!-- Stats Panel -->
-        <div class="stats-panel">
-            <h3>Traffic Statistics</h3>
-            <div id="stats-container"></div>
+        <div id="status" class="status"></div>
+
+        <div class="info">
+            <p>ESP32-CAM IP: {{ esp32_ip }}</p>
+            <a href="http://{{ esp32_ip }}" target="_blank" class="esp-link">Open ESP32-CAM Interface →</a>
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script>
+        function controlFlash(action) {
+            const statusDiv = document.getElementById('status');
+            
+            fetch(`/flash/${action}`)
+                .then(response => response.json())
+                .then(data => {
+                    statusDiv.style.display = 'block';
+                    if (data.status === 'success') {
+                        statusDiv.className = 'status success';
+                        statusDiv.textContent = `✓ ${data.message}`;
+                    } else {
+                        statusDiv.className = 'status error';
+                        statusDiv.textContent = `✗ ${data.message}`;
+                    }
+                    
+                    setTimeout(() => {
+                        statusDiv.style.display = 'none';
+                    }, 3000);
+                })
+                .catch(error => {
+                    statusDiv.style.display = 'block';
+                    statusDiv.className = 'status error';
+                    statusDiv.textContent = `✗ Connection error: ${error.message}`;
+                    
+                    setTimeout(() => {
+                        statusDiv.style.display = 'none';
+                    }, 3000);
+                });
+        }
+    </script>
 </body>
 </html>

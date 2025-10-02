@@ -1,85 +1,35 @@
-from flask import Flask, render_template, jsonify
-import random
-import time
+# from flask import Flask, render_template, request, jsonify
+# import requests
 
-app = Flask(__name__)
+# app = Flask(__name__)
 
-# Sample data structure for lanes
-# Each lane: [lane_no, total_vehicles, big_vehicles, small_vehicles, signal_color]
-lanes_data = [
-    [1, 15, 5, 10, 'red'],
-    [2, 8, 2, 6, 'green'],
-    [3, 12, 4, 8, 'red'],
-    [4, 6, 1, 5, 'yellow']
-]
+# # Replace with your ESP32-CAM IP address
+# ESP32_IP = "192.168.72.86"  # Your ESP32-CAM's IP address
 
-def get_lanes_data():
-    """
-    Returns lane data in format:
-    [lane_no, total_count, big_vehicle_count, small_vehicle_count, signal_color]
-    """
-    return lanes_data
+# @app.route('/')
+# def index():
+#     return render_template('index.html', esp32_ip=ESP32_IP)
 
-def update_signal_lights():
-    """
-    Simulates traffic signal changes
-    Cycles through: green -> yellow -> red
-    """
-    global lanes_data
-    
-    # Find current green light
-    green_lane = -1
-    for i, lane in enumerate(lanes_data):
-        if lane[4] == 'green':
-            green_lane = i
-            break
-    
-    if green_lane != -1:
-        # Change green to yellow
-        lanes_data[green_lane][4] = 'yellow'
-    else:
-        # Find yellow light and change to red, make next lane green
-        for i, lane in enumerate(lanes_data):
-            if lane[4] == 'yellow':
-                lanes_data[i][4] = 'red'
-                next_lane = (i + 1) % len(lanes_data)
-                lanes_data[next_lane][4] = 'green'
-                break
+# @app.route('/flash/<action>')
+# def control_flash(action):
+#     """Control the ESP32-CAM flash LED"""
+#     try:
+#         if action == 'on':
+#             # Send request to turn flash on
+#             response = requests.get(f'http://{ESP32_IP}/control?var=led_intensity&val=255', timeout=5)
+#         elif action == 'off':
+#             # Send request to turn flash off
+#             response = requests.get(f'http://{ESP32_IP}/control?var=led_intensity&val=0', timeout=5)
+#         else:
+#             return jsonify({'status': 'error', 'message': 'Invalid action'}), 400
+        
+#         if response.status_code == 200:
+#             return jsonify({'status': 'success', 'message': f'Flash turned {action}'})
+#         else:
+#             return jsonify({'status': 'error', 'message': 'ESP32 responded with error'}), 500
+            
+#     except requests.exceptions.RequestException as e:
+#         return jsonify({'status': 'error', 'message': f'Connection error: {str(e)}'}), 500
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/api/lanes')
-def get_lanes():
-    """API endpoint to get current lane data"""
-    return jsonify({
-        'lanes': get_lanes_data()
-    })
-
-@app.route('/api/update_signal')
-def update_signal():
-    """API endpoint to update traffic signals"""
-    update_signal_lights()
-    return jsonify({
-        'lanes': get_lanes_data()
-    })
-
-@app.route('/api/update_vehicles')
-def update_vehicles():
-    """API endpoint to simulate vehicle count changes"""
-    global lanes_data
-    
-    # Randomly update vehicle counts
-    for lane in lanes_data:
-        change = random.randint(-2, 3)
-        lane[2] = max(0, lane[2] + random.randint(-1, 2))  # big vehicles
-        lane[3] = max(0, lane[3] + random.randint(-2, 3))  # small vehicles
-        lane[1] = lane[2] + lane[3]  # total vehicles
-    
-    return jsonify({
-        'lanes': get_lanes_data()
-    })
-
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+# if __name__ == '__main__':
+#     app.run(host='0.0.0.0', port=5000, debug=True)
