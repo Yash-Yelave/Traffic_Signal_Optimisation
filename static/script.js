@@ -97,6 +97,26 @@ async function updateDashboardData() {
                 }
             }
             
+            // FIX: Update status indicator in Live Camera Feed for each lane
+            const cameraStatusElem = document.querySelector(`.camera-feed.lane-${laneNum} .status-indicator`);
+            if (cameraStatusElem) {
+                // Update status text
+                const statusText = cameraStatusElem.querySelector('i').nextSibling;
+                if (statusText) {
+                    statusText.textContent = ' ' + lane.status;
+                }
+                
+                // Update status classes
+                cameraStatusElem.className = 'status-indicator';
+                if (lane.status === 'ACTIVE') {
+                    cameraStatusElem.classList.add('active');
+                } else if (lane.status === 'WARNING') {
+                    cameraStatusElem.classList.add('warning');
+                } else if (lane.status === 'ERROR') {
+                    cameraStatusElem.classList.add('error');
+                }
+            }
+            
             // Update Lane Usage & Performance section (in Manageable Components tab)
             const laneVehiclesElem = document.querySelector(`#manageable-components .lane-item:nth-child(${laneNum}) .lane-stat:nth-child(1) .value`);
             const laneSpeedElem = document.querySelector(`#manageable-components .lane-item:nth-child(${laneNum}) .lane-stat:nth-child(2) .value`);

@@ -7,6 +7,7 @@ import threading
 from datetime import datetime
 import requests
 from static.modules.traffic_signal_backend import get_lanes_data, update_signal_lights, map_lane_data_to_signal_format
+
 app = Flask(__name__)
 
 # Global variables for shared camera stream
@@ -101,6 +102,148 @@ def start_capture_thread():
 # Start capturing when app starts
 start_capture_thread()
 
+
+# ============================================================================
+# UNIFIED DATA SOURCE - Single source of truth for all traffic data
+# ============================================================================
+def get_unified_traffic_data():
+    """
+    Single source of truth for all traffic data.
+    This function generates the core lane data that is used by both
+    dashboard and lane feeds endpoints.
+    """
+    # Generate base lane data
+    lanes = [
+        {
+            'id': 1,
+            'name': 'Lane 1',
+            'status': 'WARNING',
+            'direction': 'North',
+            'vehicles': random.randint(20, 30),
+            'speed': random.randint(40, 50),
+            'traffic': random.randint(70, 85),
+            'alert': 'Heavy congestion detected'
+        },
+        {
+            'id': 2,
+            'name': 'Lane 2',
+            'status': 'ACTIVE',
+            'direction': 'South',
+            'vehicles': random.randint(10, 20),
+            'speed': random.randint(55, 70),
+            'traffic': random.randint(30, 45),
+            'alert': None
+        },
+        {
+            'id': 3,
+            'name': 'Lane 3',
+            'status': 'ERROR',
+            'direction': 'East',
+            'vehicles': 0,
+            'speed': 0,
+            'traffic': 0,
+            'alert': 'Accident detected'
+        },
+        {
+            'id': 4,
+            'name': 'Lane 4',
+            'status': 'ACTIVE',
+            'direction': 'West',
+            'vehicles': random.randint(15, 25),
+            'speed': random.randint(45, 60),
+            'traffic': random.randint(40, 60),
+            'alert': None
+        }
+    ]
+    
+    return lanes
+
+
+def get_lane_feeds_data():
+    """
+    Backward compatible wrapper for lane feeds endpoint.
+    Returns data in the exact format expected by existing frontend code.
+    """
+    return get_unified_traffic_data()
+
+
+def get_dashboard_data():
+    """
+    Backward compatible wrapper for dashboard endpoint.
+    Transforms unified data into dashboard-specific format.
+    """
+    # Get the single source of truth
+    lanes = get_unified_traffic_data()
+    
+    # Calculate aggregated metrics from actual lane data
+    total_vehicles = sum(lane['vehicles'] for lane in lanes)
+    active_lanes = [lane for lane in lanes if lane['vehicles'] > 0]
+    avg_speed = sum(lane['speed'] for lane in active_lanes) // len(active_lanes) if active_lanes else 0
+    avg_congestion = sum(lane['traffic'] for lane in lanes) // len(lanes)
+    
+    # Collect recent alerts from lanes
+    recent_alerts = []
+    for lane in lanes:
+        if lane['alert']:
+            alert_type = 'ACCIDENT' if 'accident' in lane['alert'].lower() else 'HIGH CONGESTION'
+            recent_alerts.append({
+                'type': alert_type,
+                'message': f"{lane['alert']} on {lane['name']}",
+                'time': '5 min ago'
+            })
+    
+    # Build lane performance from actual data
+    lane_performance = []
+    for lane in lanes:
+        lane_performance.append({
+            'name': lane['name'],
+            'status': lane['status'],
+            'vehicles': lane['vehicles'],
+            'speed': lane['speed'],
+            'congestion': lane['traffic']
+        })
+    
+    return {
+        'total_vehicles': total_vehicles,
+        'avg_speed': avg_speed,
+        'avg_congestion': avg_congestion,
+        'vehicle_distribution': {
+            'cars': random.randint(50, 70),
+            'trucks': random.randint(15, 30),
+            'buses': random.randint(5, 15),
+            'bikes': random.randint(3, 8)
+        },
+        'traffic_signals': {
+            'north_south': {
+                'red': random.randint(0, 100),
+                'yellow': random.randint(0, 50),
+                'green': random.randint(100, 300)
+            },
+            'east_west': {
+                'red': random.randint(200, 400),
+                'yellow': random.randint(0, 50),
+                'green': random.randint(0, 100)
+            },
+            'main_st': {
+                'red': random.randint(0, 50),
+                'yellow': random.randint(50, 100),
+                'green': random.randint(0, 50)
+            },
+            'park_ave': {
+                'red': random.randint(0, 100),
+                'yellow': random.randint(0, 50),
+                'green': random.randint(200, 400)
+            }
+        },
+        'lane_performance': lane_performance,
+        'recent_alerts': recent_alerts
+    }
+
+
+# ============================================================================
+# ROUTES
+# ============================================================================
+
 #traffic signal routes with these:
 @app.route('/api/lanes')
 def get_lanes():
@@ -139,114 +282,6 @@ def update_vehicles_api():
     return jsonify({
         'lanes': signal_data
     })
-
-# Sample data for the dashboard
-def get_dashboard_data():
-    return {
-        'total_vehicles': random.randint(50, 100),
-        'avg_speed': random.randint(35, 55),
-        'avg_congestion': random.randint(40, 80),
-        'vehicle_distribution': {
-            'cars': random.randint(50, 70),
-            'trucks': random.randint(15, 30),
-            'buses': random.randint(5, 15),
-            'bikes': random.randint(3, 8)
-        },
-        'traffic_signals': {
-            'north_south': {
-                'red': random.randint(0, 100),
-                'yellow': random.randint(0, 50),
-                'green': random.randint(100, 300)
-            },
-            'east_west': {
-                'red': random.randint(200, 400),
-                'yellow': random.randint(0, 50),
-                'green': random.randint(0, 100)
-            },
-            'main_st': {
-                'red': random.randint(0, 50),
-                'yellow': random.randint(50, 100),
-                'green': random.randint(0, 50)
-            },
-            'park_ave': {
-                'red': random.randint(0, 100),
-                'yellow': random.randint(0, 50),
-                'green': random.randint(200, 400)
-            }
-        },
-        'lane_performance': [
-            {
-                'name': 'Lane 1',
-                'status': 'WARNING',
-                'vehicles': random.randint(20, 30),
-                'speed': random.randint(40, 50),
-                'congestion': random.randint(70, 85)
-            },
-            {
-                'name': 'Lane 2',
-                'status': 'ACTIVE',
-                'vehicles': random.randint(10, 20),
-                'speed': random.randint(55, 70),
-                'congestion': random.randint(30, 45)
-            }
-        ],
-        'recent_alerts': [
-            {
-                'type': 'ACCIDENT',
-                'message': 'Vehicle accident detected on Lane 2',
-                'time': '10 min ago'
-            },
-            {
-                'type': 'HIGH CONGESTION',
-                'message': 'Heavy traffic detected on Lane 1',
-                'time' : '5 min ago'
-            }
-        ]
-    }
-
-def get_lane_feeds_data():
-    return [
-        {
-            'id': 1,
-            'name': 'Lane 1',
-            'status': 'WARNING',
-            'direction': 'so',
-            'vehicles': random.randint(20, 30),
-            'speed': random.randint(40, 50),
-            'traffic': random.randint(70, 85),
-            'alert': 'Heavy congestion detected'
-        },
-        {
-            'id': 2,
-            'name': 'Lane 2',
-            'status': 'Yash',
-            'direction': 'South',
-            'vehicles': random.randint(10, 20),
-            'speed': random.randint(55, 70),
-            'traffic': random.randint(30, 45),
-            'alert': None
-        },
-        {
-            'id': 3,
-            'name': 'Lane 3',
-            'status': 'ERROR',
-            'direction': 'East',
-            'vehicles': 0,
-            'speed': 0,
-            'traffic': 0,
-            'alert': 'Accident detected'
-        },
-        {
-            'id': 4,
-            'name': 'Lane 4',
-            'status': 'ACTIVE',
-            'direction': 'West',
-            'vehicles': random.randint(15, 25),
-            'speed': random.randint(45, 60),
-            'traffic': random.randint(40, 60),
-            'alert': None
-        }
-    ]
 
 @app.route('/')
 def index():
