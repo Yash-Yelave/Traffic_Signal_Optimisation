@@ -1,19 +1,9 @@
 // Traffic Signal Visualization Module
 
 function initTrafficSignal() {
-    fetchTrafficLanes();
-    setInterval(updateTrafficSignal, 5000);
-    setInterval(updateTrafficVehicles, 5000);
-    setInterval(fetchTrafficLanes, 5000);
-}
-
-function renderTrafficLanes(lanesData) {
-    lanesData.forEach(lane => {
-        const [laneNo, totalVehicles, bigVehicles, smallVehicles, signalColor] = lane;
-        updateTrafficSignalLight(laneNo, signalColor);
-        renderTrafficVehicles(laneNo, bigVehicles, smallVehicles);
-    });
-    updateTrafficStats(lanesData);
+    // The simulation is now updated by the main script.js `updateDashboardData` function.
+    // We call it once on initialization to load the initial state.
+    updateSimulationWithData();
 }
 
 function updateTrafficSignalLight(laneNo, color) {
@@ -32,29 +22,17 @@ function updateTrafficSignalLight(laneNo, color) {
     }
 }
 
-function renderTrafficVehicles(laneNo, bigCount, smallCount) {
+function renderTrafficVehicles(laneNo, totalVehicles) {
     const container = document.getElementById(`signal-vehicles-${laneNo}`);
     if (!container) return;
     
     container.innerHTML = '';
     
     const maxVehicles = 10;
-    const totalVehicles = bigCount + smallCount;
+    let vehiclesToRender = Math.min(totalVehicles, maxVehicles);
     
-    if (totalVehicles > maxVehicles) {
-        const ratio = maxVehicles / totalVehicles;
-        bigCount = Math.floor(bigCount * ratio);
-        smallCount = maxVehicles - bigCount;
-    }
-    
-    for (let i = 0; i < bigCount; i++) {
-        const vehicle = document.createElement('div');
-        vehicle.className = 'signal-vehicle signal-big-vehicle';
-        vehicle.textContent = '🚚';
-        container.appendChild(vehicle);
-    }
-    
-    for (let i = 0; i < smallCount; i++) {
+    // For simplicity, we'll just render all as small vehicles (cars)
+    for (let i = 0; i < vehiclesToRender; i++) {
         const vehicle = document.createElement('div');
         vehicle.className = 'signal-vehicle signal-small-vehicle';
         vehicle.textContent = '🚗';
@@ -70,7 +48,7 @@ function updateTrafficStats(lanesData) {
     const directions = ['North', 'East', 'South', 'West'];
     
     lanesData.forEach((lane, index) => {
-        const [laneNo, totalVehicles, bigVehicles, smallVehicles, signalColor] = lane;
+        const [laneNo, totalVehicles, signalColor] = lane;
         
         const statItem = document.createElement('div');
         statItem.className = 'signal-stat-item';
@@ -83,14 +61,6 @@ function updateTrafficStats(lanesData) {
             <div class="signal-stat-row">
                 <span class="signal-stat-label">Total Vehicles:</span>
                 <span class="signal-stat-value">${totalVehicles}</span>
-            </div>
-            <div class="signal-stat-row">
-                <span class="signal-stat-label">🚚 Big Vehicles:</span>
-                <span class="signal-stat-value">${bigVehicles}</span>
-            </div>
-            <div class="signal-stat-row">
-                <span class="signal-stat-label">🚗 Small Vehicles:</span>
-                <span class="signal-stat-value">${smallVehicles}</span>
             </div>
             <div class="signal-stat-row">
                 <span class="signal-stat-label">Signal:</span>
@@ -111,41 +81,51 @@ function getTrafficSignalColor(signal) {
     }
 }
 
-async function fetchTrafficLanes() {
-    try {
-        const response = await fetch('/api/lanes');
-        const data = await response.json();
-        renderTrafficLanes(data.lanes);
-    } catch (error) {
-        console.error('Error fetching traffic lanes:', error);
-    }
+function renderTrafficLanes(lanesData) {
+    lanesData.forEach(lane => {
+        const [laneNo, totalVehicles, signalColor] = lane;
+        updateTrafficSignalLight(laneNo, signalColor);
+        renderTrafficVehicles(laneNo, totalVehicles);
+    });
+    updateTrafficStats(lanesData);
 }
 
-async function updateTrafficSignal() {
-    try {
-        const response = await fetch('/api/update_signal');
-        const data = await response.json();
-        renderTrafficLanes(data.lanes);
-    } catch (error) {
-        console.error('Error updating traffic signal:', error);
+/**
+ * Fetches data from the /api/lanes endpoint and updates the simulation visuals.
+ * This function is called by the main script.js to ensure data consistency
+ * with the rest of the dashboard.
+ */
+async function updateSimulationWithData(lanesData) {
+    if (!lanesData) {
+        console.error("updateSimulationWithData called with no lane data.");
+        return;
     }
+    // The data is already in the correct format from the backend, so we can render it directly.
+    renderTrafficLanes(lanesData);
 }
 
-async function updateTrafficVehicles() {
-    try {
-        const response = await fetch('/api/update_vehicles');
-        const data = await response.json();
-        renderTrafficLanes(data.lanes);
-    } catch (error) {
-        console.error('Error updating traffic vehicles:', error);
-    }
-}
+// --- Initialization Logic ---
+
+let simulationInitialized = false;
 
 document.addEventListener('DOMContentLoaded', function() {
     const trafficDetectionTab = document.querySelector('[data-tab="traffic-detection"]');
+    
     if (trafficDetectionTab) {
-        trafficDetectionTab.addEventListener('click', function() {
-            setTimeout(initTrafficSignal, 100);
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.attributeName === "class" && 
+                    trafficDetectionTab.classList.contains('active') && 
+                    !simulationInitialized) {
+                    
+                    console.log("Traffic Detection tab is active, initializing simulation.");
+                    initTrafficSignal();
+                    simulationInitialized = true;
+                    observer.disconnect(); // Stop observing once initialized
+                }
+            });
         });
+
+        observer.observe(trafficDetectionTab, { attributes: true });
     }
 });

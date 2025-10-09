@@ -17,7 +17,7 @@
             <div class="logo">
                 <i class="fas fa-traffic-light"></i>
                 <h1>UrbanFlow AI</h1>
-                <span class="status-badge active">All 4 Lanes Active</span>
+                <span class="status-badge active" id="main-status-badge">All 4 Lanes Active</span>
             </div>
         </div>
         <div class="header-right">
@@ -82,9 +82,9 @@
                     </div>
                     <div class="video-container">
                         <img src="{{ url_for('video_feed', lane_id=1) }}" alt="Lane 1 Feed" class="video-stream">
-                        <div class="video-overlay">
+                        <!-- <div class="video-overlay">
                             <div class="alert-message">Heavy congestion detected</div>
-                        </div>
+                        </div> -->
                     </div>
                     <div class="camera-stats">
                         <div class="stat">
@@ -139,24 +139,24 @@
                     </div>
                     <div class="video-container">
                         <div class="video-offline">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <p>Camera Offline</p>
+                            <!-- <i class="fas fa-exclamation-triangle"></i>
+                            <p>Camera Offline</p> -->
                         </div>
-                        <div class="video-overlay">
+                        <!-- <div class="video-overlay">
                             <div class="alert-message error">Accident detected</div>
-                        </div>
+                        </div> -->
                     </div>
                     <div class="camera-stats">
                         <div class="stat">
-                            <span class="value">0</span>
+                            <span class="value" id="lane3-vehicles">0</span>
                             <span class="label">Vehicles</span>
                         </div>
                         <div class="stat">
-                            <span class="value">0</span>
+                            <span class="value" id="lane3-speed">0</span>
                             <span class="label">km/h</span>
                         </div>
                         <div class="stat">
-                            <span class="value">0%</span>
+                            <span class="value" id="lane3-traffic">0%</span>
                             <span class="label">Traffic</span>
                         </div>
                     </div>

@@ -5,8 +5,8 @@ import random
 import time
 import threading
 from datetime import datetime
-import requests
-from static.modules.traffic_signal_backend import get_lanes_data, update_signal_lights, map_lane_data_to_signal_format
+import requests 
+from static.modules.traffic_signal_backend import map_lane_data_to_signal_format
 
 app = Flask(__name__)
 
@@ -117,7 +117,7 @@ def get_unified_traffic_data():
         {
             'id': 1,
             'name': 'Lane 1',
-            'status': 'WARNING',
+            'status': 'ACTIVE',
             'direction': 'North',
             'vehicles': random.randint(20, 30),
             'speed': random.randint(40, 50),
@@ -137,11 +137,11 @@ def get_unified_traffic_data():
         {
             'id': 3,
             'name': 'Lane 3',
-            'status': 'ERROR',
+            'status': 'ACTIVE',
             'direction': 'East',
-            'vehicles': 0,
-            'speed': 0,
-            'traffic': 0,
+            'vehicles': random.randint(5, 15),
+            'speed': random.randint(25, 40),
+            'traffic': random.randint(50, 65),
             'alert': 'Accident detected'
         },
         {
@@ -176,7 +176,7 @@ def get_dashboard_data():
     lanes = get_unified_traffic_data()
     
     # Calculate aggregated metrics from actual lane data
-    total_vehicles = sum(lane['vehicles'] for lane in lanes)
+    total_vehicles = sum(lane.get('vehicles', 0) for lane in lanes)
     active_lanes = [lane for lane in lanes if lane['vehicles'] > 0]
     avg_speed = sum(lane['speed'] for lane in active_lanes) // len(active_lanes) if active_lanes else 0
     avg_congestion = sum(lane['traffic'] for lane in lanes) // len(lanes)
@@ -189,7 +189,7 @@ def get_dashboard_data():
             recent_alerts.append({
                 'type': alert_type,
                 'message': f"{lane['alert']} on {lane['name']}",
-                'time': '5 min ago'
+                'time': '2 min ago'
             })
     
     # Build lane performance from actual data
@@ -204,6 +204,8 @@ def get_dashboard_data():
         })
     
     return {
+        'lanes': lanes, # Add full lane data to the main dashboard endpoint
+        'simulation_lanes': map_lane_data_to_signal_format(lanes), # Add pre-formatted data for the simulation
         'total_vehicles': total_vehicles,
         'avg_speed': avg_speed,
         'avg_congestion': avg_congestion,
@@ -254,22 +256,19 @@ def get_lanes():
     # Convert to traffic signal format
     signal_data = map_lane_data_to_signal_format(lane_feeds)
     
-    return jsonify({
+    return jsonify({ # This endpoint is now the single source for the simulation
         'lanes': signal_data
     })
 
 @app.route('/api/update_signal')
 def update_signal():
     """API endpoint to update traffic signals"""
-    # Get fresh data from your existing lane feeds
-    lane_feeds = get_lane_feeds_data()
-    signal_data = map_lane_data_to_signal_format(lane_feeds)
-    
-    # Optionally apply signal cycling logic
-    update_signal_lights()
+    # Get fresh data from the unified source
+    lane_feeds = get_lane_feeds_data() # Get latest data
+    signal_data = map_lane_data_to_signal_format(lane_feeds) # Convert it
     
     return jsonify({
-        'lanes': get_lanes_data()
+        'lanes': signal_data
     })
 
 @app.route('/api/update_vehicles')
@@ -277,10 +276,10 @@ def update_vehicles_api():
     """API endpoint to get updated vehicle data from lane feeds"""
     # Get real-time data from your existing system
     lane_feeds = get_lane_feeds_data()
-    signal_data = map_lane_data_to_signal_format(lane_feeds)
+    signal_data = map_lane_data_to_signal_format(lane_feeds) # Convert it
     
     return jsonify({
-        'lanes': signal_data
+        'lanes': signal_data # Return the converted, fresh data
     })
 
 @app.route('/')

@@ -1,4 +1,5 @@
 // Tab switching functionality
+
 document.addEventListener('DOMContentLoaded', function() {
     const tabs = document.querySelectorAll('.tab');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -68,12 +69,29 @@ async function updateDashboardData() {
                 if (warningTimeElem) warningTimeElem.textContent = data.recent_alerts[1].time;
             }
         }
-        
+
+        // Update main status badge based on all lane statuses
+        const mainStatusBadge = document.getElementById('main-status-badge');
+        if (mainStatusBadge && data.lanes) {
+            const activeLanesCount = data.lanes.filter(lane => lane.status === 'ACTIVE').length;
+            const hasError = data.lanes.some(lane => lane.status === 'ERROR');
+            const hasWarning = data.lanes.some(lane => lane.status === 'WARNING');
+
+            mainStatusBadge.className = 'status-badge'; // Reset classes
+            if (hasError) {
+                mainStatusBadge.textContent = 'System Error Detected';
+                mainStatusBadge.classList.add('error');
+            } else if (hasWarning) {
+                mainStatusBadge.textContent = `${activeLanesCount} of ${data.lanes.length} Lanes Active`;
+                mainStatusBadge.classList.add('warning');
+            } else {
+                mainStatusBadge.textContent = `All ${data.lanes.length} Lanes Active`;
+                mainStatusBadge.classList.add('active');
+            }
+        }
+
         // Update lane data
-        const laneResponse = await fetch('/api/lane-feeds');
-        const laneData = await laneResponse.json();
-        
-        laneData.forEach((lane, index) => {
+        data.lanes.forEach((lane, index) => {
             const laneNum = index + 1;
             
             // Update camera feed stats (in Live Camera tab)
@@ -166,7 +184,13 @@ async function updateDashboardData() {
             barBikes.style.width = distribution.bikes + '%';
             barBikes.parentElement.nextElementSibling.textContent = distribution.bikes + '%';
         }
-        
+
+        // Pass the consistent lane data to the traffic simulation module
+        // This ensures the simulation is always in sync with the dashboard.
+        if (typeof updateSimulationWithData === 'function' && data.simulation_lanes) {
+            updateSimulationWithData(data.simulation_lanes);
+        }
+
     } catch (error) {
         console.error('Error updating dashboard data:', error);
     }
