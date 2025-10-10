@@ -5,8 +5,8 @@ import random
 import time
 import threading
 from datetime import datetime
-import requests
-from static.modules.traffic_signal_backend import map_lane_data_to_signal_format, set_active_green_lane
+import requests 
+from static.modules.traffic_signal_backend import map_lane_data_to_signal_format, set_active_green_lane, SIGNAL_STATE
 
 app = Flask(__name__)
 
@@ -206,6 +206,7 @@ def get_dashboard_data():
     return {
         'lanes': lanes, # Add full lane data to the main dashboard endpoint
         'simulation_lanes': map_lane_data_to_signal_format(lanes), # Add pre-formatted data for the simulation
+        'signal_state': SIGNAL_STATE, # Expose the full signal state for the countdown UI
         'total_vehicles': total_vehicles,
         'avg_speed': avg_speed,
         'avg_congestion': avg_congestion,
@@ -327,14 +328,15 @@ def traffic_detection_feed():
 def set_signal_from_ai():
     """
     API endpoint for the DQN agent to set the active green light.
-    Expects JSON: {"lane": <int>}
+    Expects JSON: {"lane": <int>, "green_time": <float>}
     """
     data = request.get_json()
     if not data or 'lane' not in data:
         return jsonify({'status': 'error', 'message': 'Invalid payload. "lane" key is required.'}), 400
 
     lane_id = data['lane']
-    set_active_green_lane(lane_id) # Update the backend module's state
+    green_time = data.get('green_time', 8) # Default to 8s if not provided
+    set_active_green_lane(lane_id, green_time) # Update the backend module's state
     # print(f"Signal Updated by AI: Lane {lane_id} is now GREEN") # Optional: for debugging
     return jsonify({'status': 'success', 'message': f'Signal for lane {lane_id} set to green.'})
 

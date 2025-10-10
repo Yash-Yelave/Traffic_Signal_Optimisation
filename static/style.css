@@ -1036,3 +1036,63 @@ body {
     color: #721c24;
     border: 1px solid #f5c6cb;
 }
+
+/* --- New Traffic Control Center Styles --- */
+#traffic-control-center-content {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding-top: 10px;
+}
+
+.control-lane-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background-color: #f0f2f5;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    border-left: 5px solid transparent;
+}
+
+.control-lane-name {
+    flex-grow: 1;
+    font-weight: 600;
+    color: #333;
+}
+
+.control-signal-light {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin-right: 15px;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.1) inset;
+}
+
+.control-signal-light.green {
+    background-color: #2ecc71;
+    box-shadow: 0 0 12px #2ecc71;
+}
+
+.control-signal-light.red {
+    background-color: #e74c3c;
+    box-shadow: 0 0 12px #e74c3c;
+}
+
+.control-lane-status {
+    font-weight: 700;
+    min-width: 110px;
+    text-align: center;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 0.9em;
+}
+
+.control-lane-status.green {
+    color: #27ae60;
+}
+.control-lane-status.red {
+    color: #c0392b;
+}
+}

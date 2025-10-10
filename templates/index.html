@@ -283,71 +283,36 @@
                     <div class="card-header">
                         <h3><i class="fas fa-traffic-light"></i> Traffic Control Center</h3>
                     </div>
-                    <div class="card-content">
-                        <div class="traffic-signals">
-                            <div class="signal-group">
-                                <h4>North-South</h4>
-                                <div class="signal-lights">
-                                    <div class="light red active" data-color="red">
-                                        <span class="timer">145</span>
-                                    </div>
-                                    <div class="light yellow" data-color="yellow">
-                                        <span class="timer">5</span>
-                                    </div>
-                                    <div class="light green" data-color="green">
-                                        <span class="timer">30</span>
-                                    </div>
-                                </div>
-                                <div class="signal-status">Red - 145s remaining</div>
-                            </div>
-                            
-                            <div class="signal-group">
-                                <h4>East-West</h4>
-                                <div class="signal-lights">
-                                    <div class="light red" data-color="red">
-                                        <span class="timer">30</span>
-                                    </div>
-                                    <div class="light yellow" data-color="yellow">
-                                        <span class="timer">5</span>
-                                    </div>
-                                    <div class="light green active" data-color="green">
-                                        <span class="timer">325</span>
-                                    </div>
-                                </div>
-                                <div class="signal-status">Green - 325s remaining</div>
-                            </div>
+                    <div class="card-content" id="traffic-control-center-content">
+                        <!-- Lane 1 -->
+                        <div class="control-lane-item" id="control-lane-1">
+                            <span class="control-lane-name">Lane 1</span>
+                            <div class="control-signal-light red"></div>
+                            <span class="control-lane-status">RED</span>
                         </div>
-
-                        <div class="intersection-control">
-                            <div class="intersection-row">
-                                <div class="intersection">
-                                    <span class="intersection-label">Main St</span>
-                                    <div class="mini-lights">
-                                        <div class="mini-light red"></div>
-                                        <div class="mini-light yellow active"></div>
-                                        <div class="mini-light green"></div>
-                                    </div>
-                                    <span class="intersection-timer">75s</span>
-                                </div>
-                                <div class="intersection">
-                                    <span class="intersection-label">Park Ave</span>
-                                    <div class="mini-lights">
-                                        <div class="mini-light red"></div>
-                                        <div class="mini-light yellow"></div>
-                                        <div class="mini-light green active"></div>
-                                    </div>
-                                    <span class="intersection-timer">286s</span>
-                                </div>
-                            </div>
+                        <!-- Lane 2 -->
+                        <div class="control-lane-item" id="control-lane-2">
+                            <span class="control-lane-name">Lane 2</span>
+                            <div class="control-signal-light red"></div>
+                            <span class="control-lane-status">RED</span>
+                        </div>
+                        <!-- Lane 3 -->
+                        <div class="control-lane-item" id="control-lane-3">
+                            <span class="control-lane-name">Lane 3</span>
+                            <div class="control-signal-light red"></div>
+                            <span class="control-lane-status">RED</span>
+                        </div>
+                        <!-- Lane 4 -->
+                        <div class="control-lane-item" id="control-lane-4">
+                            <span class="control-lane-name">Lane 4</span>
+                            <div class="control-signal-light red"></div>
+                            <span class="control-lane-status">RED</span>
                         </div>
 
                         <div class="emergency-controls">
                             <button class="emergency-btn">
                                 <i class="fas fa-exclamation-triangle"></i>
                                 Emergency Stop All Signals
-                            </button>
-                            <button class="priority-btn">
-                                Priority Vehicle Override
                             </button>
                         </div>
                     </div>

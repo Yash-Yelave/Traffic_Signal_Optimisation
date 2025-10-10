@@ -122,11 +122,11 @@ def reward_fn(prev_counts, new_counts, lane_idx, amb_flags):
 # recv_sock.bind(RECV_ADDR)                                    # Commented out for simulation
 send_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-def send_decision_to_simulation(lane_id):
-    """Sends the chosen lane to the Flask app's simulation endpoint."""
+def send_decision_to_simulation(lane_id, green_time):
+    """Sends the chosen lane and time to the Flask app's simulation endpoint."""
     try:
         # The lane ID in the simulation is 1-based, but our agent's is 0-based.
-        payload = {"lane": lane_id + 1}
+        payload = {"lane": lane_id + 1, "green_time": green_time}
         requests.post(FLASK_API_URL, json=payload, timeout=0.5)
     except requests.exceptions.RequestException as e:
         # It's okay if this fails, the simulation just won't update.
@@ -223,7 +223,7 @@ def main():
             print(f"🧠 Input: {state} | 🚦 Decision: {decision_list} | reward={reward:.2f} | Next action in {green_time}s")
             
             # Send the decision to the Flask simulation
-            send_decision_to_simulation(lane_selected)
+            send_decision_to_simulation(lane_selected, green_time)
 
     except KeyboardInterrupt:
         print("🛑 DQN stopped by user")

@@ -191,6 +191,11 @@ async function updateDashboardData() {
             updateSimulationWithData(data.simulation_lanes);
         }
 
+        // Update the new Traffic Control Center with countdown logic
+        // This is now the primary function driving the control center UI
+        if (typeof updateTrafficControlCenter === 'function') {
+            updateTrafficControlCenter(data.signal_state); // Pass the new signal_state object
+        }
     } catch (error) {
         console.error('Error updating dashboard data:', error);
     }
@@ -281,4 +286,40 @@ function controlFlash(action) {
                 statusDiv.style.display = 'none';
             }, 3000);
         });
+}
+
+function updateTrafficControlCenter(signalState) {
+    if (!signalState) return; // Do nothing if signalState is not available
+
+    const activeLaneId = signalState.active_green_lane_id;
+    const greenStartTime = signalState.green_time_start;
+    const greenDuration = signalState.green_time_duration;
+
+    // Calculate time remaining for the green light
+    const elapsedSeconds = (Date.now() / 1000) - greenStartTime;
+    const remainingSeconds = Math.max(0, Math.round(greenDuration - elapsedSeconds));
+
+    for (let i = 1; i <= 4; i++) {
+        const laneItem = document.getElementById(`control-lane-${i}`);
+        if (!laneItem) continue;
+
+        const light = laneItem.querySelector('.control-signal-light');
+        const statusText = laneItem.querySelector('.control-lane-status');
+
+        // Reset classes for both elements
+        light.className = 'control-signal-light';
+        statusText.className = 'control-lane-status';
+
+        if (i === activeLaneId) {
+            // This is the active green lane
+            light.classList.add('green');
+            statusText.classList.add('green');
+            statusText.textContent = `GREEN (${remainingSeconds}s)`;
+        } else {
+            // This is an inactive red lane
+            light.classList.add('red');
+            statusText.classList.add('red');
+            statusText.textContent = 'RED';
+        }
+    }
 }
