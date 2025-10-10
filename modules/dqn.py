@@ -151,6 +151,7 @@ def main():
             now = time.time()
             if now - last_action_time >= action_cooldown:
                 decision_list = [int(lane_selected), float(green_time)]
+
                 send_sock.sendto(str(decision_list).encode("utf-8"), SEND_ADDR)
                 last_action_time = now
                 print(f"🚦 Decision sent: {decision_list} | reward={reward:.2f}")

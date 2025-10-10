@@ -1,27 +1,37 @@
 # Traffic Signal Backend Module - Integrated with existing app.py data
+import time
+import random
+
+
+
+# --- DEMO CONFIGURATION ---
+# In a real implementation, these values would come from your AI decision module (e.g., DQN).
+# For this simulation, you can change these values to test different scenarios.
+# The `ACTIVE_GREEN_LANE_ID` determines which lane gets the 'green' signal.
+ACTIVE_GREEN_LANE_ID = 1   # Example: Lane 1 is c  urrently green.
+
 
 def map_lane_data_to_signal_format(lane_feeds_data):
     """
     Converts your existing lane feeds data to traffic signal format
-    Input: lane_feeds_data from get_lane_feeds_data()
-    Output: [lane_no, total_vehicles, signal_color]
+    based on which lane is designated as green.
+
+    Input:
+        lane_feeds_data: The list of lane data from get_unified_traffic_data().
+    Output:
+        A list of lists, where each inner list is [lane_no, total_vehicles, signal_color].
     """
     processed_lanes = []
 
-    for i, lane in enumerate(lane_feeds_data):
-        if i >= 4:  # We only handle 4 lanes
-            break
-            
+    # This logic now simulates a decision from an external AI module.
+    # The lane with the ID matching ACTIVE_GREEN_LANE_ID will be 'green',
+    # and all other lanes will be 'red'.
+    for lane in lane_feeds_data:
         lane_no = lane['id']
         total_vehicles = lane['vehicles']
-        # Determine signal color based on traffic level
-        traffic_level = lane['traffic']
-        if traffic_level > 70:
-            signal_color = 'red'  # High traffic - stop
-        elif traffic_level > 40:
-            signal_color = 'yellow'  # Medium traffic - caution
-        else:
-            signal_color = 'green'  # Low traffic - go
+
+        # Set signal color based on the active green lane ID
+        signal_color = 'green' if lane_no == ACTIVE_GREEN_LANE_ID else 'red'
             
         processed_lanes.append([lane_no, total_vehicles, signal_color])
     

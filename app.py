@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, Response
+from flask import Flask, render_template, jsonify, Response, request
 # Removed 'import cv2' as we are no longer using it for stream capture due to compatibility issues
 import json
 import random
@@ -174,7 +174,7 @@ def get_dashboard_data():
     """
     # Get the single source of truth
     lanes = get_unified_traffic_data()
-    
+
     # Calculate aggregated metrics from actual lane data
     total_vehicles = sum(lane.get('vehicles', 0) for lane in lanes)
     active_lanes = [lane for lane in lanes if lane['vehicles'] > 0]
@@ -263,7 +263,7 @@ def get_lanes():
 @app.route('/api/update_signal')
 def update_signal():
     """API endpoint to update traffic signals"""
-    # Get fresh data from the unified source
+    # This endpoint now relies on the main dashboard data for consistency
     lane_feeds = get_lane_feeds_data() # Get latest data
     signal_data = map_lane_data_to_signal_format(lane_feeds) # Convert it
     
@@ -274,7 +274,7 @@ def update_signal():
 @app.route('/api/update_vehicles')
 def update_vehicles_api():
     """API endpoint to get updated vehicle data from lane feeds"""
-    # Get real-time data from your existing system
+    # This endpoint now relies on the main dashboard data for consistency
     lane_feeds = get_lane_feeds_data()
     signal_data = map_lane_data_to_signal_format(lane_feeds) # Convert it
     
