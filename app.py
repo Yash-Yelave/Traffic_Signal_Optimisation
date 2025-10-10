@@ -5,8 +5,8 @@ import random
 import time
 import threading
 from datetime import datetime
-import requests 
-from static.modules.traffic_signal_backend import map_lane_data_to_signal_format
+import requests
+from static.modules.traffic_signal_backend import map_lane_data_to_signal_format, set_active_green_lane
 
 app = Flask(__name__)
 
@@ -322,6 +322,21 @@ def traffic_detection_feed():
     """Traffic detection feed also uses shared ESP32 stream"""
     return Response(generate_frames(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/api/set_signal', methods=['POST'])
+def set_signal_from_ai():
+    """
+    API endpoint for the DQN agent to set the active green light.
+    Expects JSON: {"lane": <int>}
+    """
+    data = request.get_json()
+    if not data or 'lane' not in data:
+        return jsonify({'status': 'error', 'message': 'Invalid payload. "lane" key is required.'}), 400
+
+    lane_id = data['lane']
+    set_active_green_lane(lane_id) # Update the backend module's state
+    # print(f"Signal Updated by AI: Lane {lane_id} is now GREEN") # Optional: for debugging
+    return jsonify({'status': 'success', 'message': f'Signal for lane {lane_id} set to green.'})
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
