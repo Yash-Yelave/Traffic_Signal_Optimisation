@@ -81,7 +81,7 @@
                         <span class="direction">North</span>
                     </div>
                     <div class="video-container">
-                        <img src="{{ url_for('video_feed', lane_id=1) }}" alt="Lane 1 Feed" class="video-stream">
+                        <img src="{{ url_for('video_feed', lane_id=1, cache_bust=now) }}" alt="Lane 1 Feed" class="video-stream">
                         <!-- <div class="video-overlay">
                             <div class="alert-message">Heavy congestion detected</div>
                         </div> -->
@@ -111,7 +111,7 @@
                         <span class="direction">South</span>
                     </div>
                     <div class="video-container">
-                        <img src="{{ url_for('video_feed', lane_id=2) }}" alt="Lane 2 Feed" class="video-stream">
+                        <img src="{{ url_for('video_feed', lane_id=2, cache_bust=now) }}" alt="Lane 2 Feed" class="video-stream">
                     </div>
                     <div class="camera-stats">
                         <div class="stat">
@@ -171,7 +171,7 @@
                         <span class="direction">West</span>
                     </div>
                     <div class="video-container">
-                        <img src="{{ url_for('video_feed', lane_id=4) }}" alt="Lane 4 Feed" class="video-stream">
+                        <img src="{{ url_for('video_feed', lane_id=4, cache_bust=now) }}" alt="Lane 4 Feed" class="video-stream">
                     </div>
                     <div class="camera-stats">
                         <div class="stat">

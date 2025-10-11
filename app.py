@@ -10,16 +10,9 @@ from static.modules.traffic_signal_backend import map_lane_data_to_signal_format
 
 app = Flask(__name__)
 
-# Global variables for shared camera stream
-# esp32_cap = None # Removed OpenCV VideoCapture object
-esp32_frame = None # Holds raw JPEG bytes now
-esp32_lock = threading.Lock()
-capture_thread = None
-is_capturing = False
-
 
 # ESP32-CAM IP address
-ESP32_IP = "192.168.72.86"
+ESP32_IP = "10.44.36.86"
 # Combined stream URL constant for requests
 ESP32_STREAM_URL = f'http://{ESP32_IP}:81/stream'
 
@@ -28,11 +21,12 @@ ESP32_STREAM_URL = f'http://{ESP32_IP}:81/stream'
 def control_flash(action):
     """Control the ESP32-CAM flash LED"""
     try:
+        control_url = f"http://{ESP32_IP}/control"
         if action == 'on':
             # FIX: Reduced intensity from 255 to 64. Max intensity often causes the camera to brown-out and freeze.
-            response = requests.get(f'http://{ESP32_IP}/control?var=led_intensity&val=64', timeout=5)
+            response = requests.get(f'{control_url}?var=led_intensity&val=64', timeout=5)
         elif action == 'off':
-            response = requests.get(f'http://{ESP32_IP}/control?var=led_intensity&val=0', timeout=5)
+            response = requests.get(f'{control_url}?var=led_intensity&val=0', timeout=5)
         else:
             return jsonify({'status': 'error', 'message': 'Invalid action'}), 400
         
@@ -43,65 +37,6 @@ def control_flash(action):
             
     except requests.exceptions.RequestException as e:
         return jsonify({'status': 'error', 'message': f'Connection error: {str(e)}'}), 500
-
-
-def capture_esp32_stream():
-    """Background thread to continuously capture frames from ESP32 using requests to handle raw MJPEG stream."""
-    global esp32_frame, is_capturing
-    
-    while is_capturing:
-        try:
-            # Open the stream connection using requests (robust against OpenCV issues)
-            response = requests.get(ESP32_STREAM_URL, stream=True, timeout=5)
-            
-            if response.status_code == 200:
-                # Buffer to hold incomplete JPEG data chunks
-                bytes_buffer = b''
-                
-                # Iterate over the raw content chunks
-                for chunk in response.iter_content(chunk_size=1024):
-                    if not is_capturing: break
-
-                    bytes_buffer += chunk
-                    
-                    # Look for JPEG Start of Image (SOI: 0xFFD8) and End of Image (EOI: 0xFFD9) markers
-                    a = bytes_buffer.find(b'\xff\xd8')
-                    b = bytes_buffer.find(b'\xff\xd9')
-                    
-                    if a != -1 and b != -1 and b > a:
-                        # Found a complete JPEG frame
-                        jpeg_data = bytes_buffer[a:b+2]
-                        
-                        with esp32_lock:
-                            esp32_frame = jpeg_data
-                        
-                        # Discard the successfully processed frame data from the buffer
-                        bytes_buffer = bytes_buffer[b+2:]
-                        
-                    time.sleep(0.001) # Minimal sleep to yield execution
-            else:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] Stream failed with HTTP status: {response.status_code}. Retrying in 2s.")
-                time.sleep(2)
-                
-        except requests.exceptions.RequestException as e:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] Connection error in background thread: {e}. Retrying in 3s.")
-            time.sleep(3)
-            
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Background capture thread stopped.")
-
-
-def start_capture_thread():
-    """Start the background capture thread"""
-    global capture_thread, is_capturing
-    
-    if capture_thread is None or not capture_thread.is_alive():
-        is_capturing = True
-        capture_thread = threading.Thread(target=capture_esp32_stream, daemon=True)
-        capture_thread.start()
-
-# Start capturing when app starts
-start_capture_thread()
-
 
 # ============================================================================
 # UNIFIED DATA SOURCE - Single source of truth for all traffic data
@@ -285,7 +220,7 @@ def update_vehicles_api():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', now=time.time())
 
 @app.route('/api/dashboard-data')
 def dashboard_data():
@@ -295,33 +230,49 @@ def dashboard_data():
 def lane_feeds():
     return jsonify(get_lane_feeds_data())
 
-def generate_frames():
-    """Generate frames from shared ESP32 camera feed (raw JPEG data from requests)"""
-    global esp32_frame
-    
-    while True:
-        if esp32_frame is not None:
-            with esp32_lock:
-                frame_bytes = esp32_frame # Frame is already raw JPEG bytes from the requests stream
-            
-            # Yield the pre-encoded JPEG bytes for the MJPEG stream
-            # We skip cv2.imencode and cv2.resize since we are delivering the raw bytes
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+def generate_frames_on_demand():
+    """
+    Establishes a connection to the ESP32-CAM stream only when a client is connected.
+    This prevents the Flask app from hogging the camera resource.
+    The connection is automatically closed when the client disconnects.
+    """
+    response = None
+    try:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Client connected. Connecting to ESP32 stream...")
+        response = requests.get(ESP32_STREAM_URL, stream=True, timeout=10)
+        
+        if response.status_code == 200:
+            bytes_buffer = b''
+            for chunk in response.iter_content(chunk_size=1024):
+                bytes_buffer += chunk
+                a = bytes_buffer.find(b'\xff\xd8') # JPEG start
+                b = bytes_buffer.find(b'\xff\xd9') # JPEG end
+                if a != -1 and b != -1 and b > a:
+                    jpeg_data = bytes_buffer[a:b+2]
+                    bytes_buffer = bytes_buffer[b+2:]
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + jpeg_data + b'\r\n')
         else:
-            # FIX: Minimized sleep to reduce client-side waiting latency.
-            time.sleep(0.01)
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] Stream failed with HTTP status: {response.status_code}")
+
+    except requests.exceptions.RequestException as e:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Stream connection error: {e}")
+
+    finally:
+        if response:
+            response.close() # Ensure the connection is closed
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Client disconnected. ESP32 stream connection closed.")
 
 @app.route('/video_feed/<int:lane_id>')
 def video_feed(lane_id):
     """All lanes use the same ESP32 cam stream from shared capture"""
-    return Response(generate_frames(),
+    return Response(generate_frames_on_demand(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/traffic_detection_feed')
 def traffic_detection_feed():
     """Traffic detection feed also uses shared ESP32 stream"""
-    return Response(generate_frames(),
+    return Response(generate_frames_on_demand(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/api/set_signal', methods=['POST'])
