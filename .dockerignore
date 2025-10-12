@@ -1,4 +1,11 @@
-.vercel
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+Dockerfile
+.dockerignore
 
 # Virtual environment
 venv/
