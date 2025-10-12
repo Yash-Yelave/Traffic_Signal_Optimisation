@@ -26,11 +26,7 @@
 #include "esp32-hal-log.h"
 #endif
 
-// Make variables from CameraWebServer.ino available to this file
-extern volatile unsigned long greenLightEndTime;
-extern volatile bool isGreenLightActive;
-extern const int greenLedPin;
-extern const int redLedPin;
+#include "traffic_globals.h"
 
 
 typedef struct {
@@ -625,12 +621,13 @@ static esp_err_t index_handler(httpd_req_t *req) {
 }
 
 // ===================================================
-// NEW: Handler for the traffic signal
+// CORRECTED: Handler for the traffic signal
 // ===================================================
 static esp_err_t start_green_handler(httpd_req_t *req) {
   char*  buf;
   size_t buf_len;
   char resp_str[128];
+  bool success = false;
 
   buf_len = httpd_req_get_url_query_len(req) + 1;
   if (buf_len > 1) {
@@ -650,8 +647,9 @@ static esp_err_t start_green_handler(httpd_req_t *req) {
           greenLightEndTime = millis() + (time_seconds * 1000);
           Serial.println("Green ON, Red OFF");
           snprintf(resp_str, sizeof(resp_str), "Green light activated for %d seconds.", time_seconds);
+          success = true;
         } else {
-          snprintf(resp_str, sizeof(resp_str), "Invalid time value.");
+          snprintf(resp_str, sizeof(resp_str), "Invalid time value. Must be greater than 0.");
         }
       } else {
         snprintf(resp_str, sizeof(resp_str), "'time' parameter not found.");
@@ -659,12 +657,16 @@ static esp_err_t start_green_handler(httpd_req_t *req) {
     }
     free(buf);
   } else {
-      // No time provided, send a bad request response
-      httpd_resp_send_400(req);
-      return ESP_FAIL;
+      snprintf(resp_str, sizeof(resp_str), "No parameters provided. Use '?time=SECONDS'.");
   }
 
   // Respond to the client
+  if (!success) {
+    // Send a 400 Bad Request error if something went wrong
+    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, resp_str);
+    return ESP_FAIL;
+  }
+
   httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
   httpd_resp_send(req, resp_str, strlen(resp_str));
 
