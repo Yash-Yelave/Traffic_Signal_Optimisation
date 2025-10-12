@@ -75,10 +75,10 @@
                 <div class="camera-feed lane-1">
                     <div class="camera-header">
                         <span class="lane-label">Lane 1</span>
-                        <span class="status-indicator active" id="lane2-status">
+                        <span class="status-indicator active" id="lane1-status">
                             <i class="fas fa-check-circle"></i> ACTIVE
                         </span>
-                        <span class="direction">North</span>
+                        <!-- <span class="direction">North</span> -->
                     </div>
                     <div class="video-container">
                         <img src="{{ url_for('video_feed', lane_id=1, cache_bust=now) }}" alt="Lane 1 Feed" class="video-stream">
@@ -91,24 +91,24 @@
                             <span class="value" id="lane1-vehicles">23</span>
                             <span class="label">Vehicles</span>
                         </div>
-                        <div class="stat">
+                        <!-- <div class="stat">
                             <span class="value" id="lane1-speed">45</span>
                             <span class="label">km/h</span>
-                        </div>
-                        <div class="stat">
+                        </div> -->
+                        <!-- <div class="stat">
                             <span class="value traffic-high" id="lane1-traffic">78%</span>
                             <span class="label">Traffic</span>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
 
                 <div class="camera-feed lane-2">
                     <div class="camera-header">
                         <span class="lane-label">Lane 2</span>
-                        <span class="status-indicator active" id="lane2-status">
+                        <span class="status-indicator active" id="lane2-status-indicator">
                             <i class="fas fa-check-circle"></i> ACTIVE
                         </span>
-                        <span class="direction">South</span>
+                        <!-- <span class="direction">South</span> -->
                     </div>
                     <div class="video-container">
                         <img src="{{ url_for('video_feed', lane_id=2, cache_bust=now) }}" alt="Lane 2 Feed" class="video-stream">
@@ -118,57 +118,52 @@
                             <span class="value" id="lane2-vehicles">15</span>
                             <span class="label">Vehicles</span>
                         </div>
-                        <div class="stat">
+                        <!-- <div class="stat">
                             <span class="value" id="lane2-speed">62</span>
                             <span class="label">km/h</span>
-                        </div>
-                        <div class="stat">
+                        </div> -->
+                        <!-- <div class="stat">
                             <span class="value traffic-low" id="lane2-traffic">34%</span>
                             <span class="label">Traffic</span>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
 
                 <div class="camera-feed lane-3">
                     <div class="camera-header">
                         <span class="lane-label">Lane 3</span>
-                        <span class="status-indicator error">
+                        <span class="status-indicator error" id="lane3-status-indicator">
                             <i class="fas fa-times-circle"></i> ERROR
                         </span>
-                        <span class="direction">East</span>
+                        <!-- <span class="direction">East</span> -->
                     </div>
                     <div class="video-container">
-                        <div class="video-offline">
-                            <!-- <i class="fas fa-exclamation-triangle"></i>
-                            <p>Camera Offline</p> -->
-                        </div>
-                        <!-- <div class="video-overlay">
-                            <div class="alert-message error">Accident detected</div>
-                        </div> -->
+                        <!-- FIX: Added the missing img tag to display the video feed for Lane 3. -->
+                        <img src="{{ url_for('video_feed', lane_id=3, cache_bust=now) }}" alt="Lane 3 Feed" class="video-stream">
                     </div>
                     <div class="camera-stats">
                         <div class="stat">
-                            <span class="value" id="lane3-vehicles">0</span>
+                            <span class="value" id="lane3-vehicles">8</span>
                             <span class="label">Vehicles</span>
                         </div>
-                        <div class="stat">
+                        <!-- <div class="stat">
                             <span class="value" id="lane3-speed">0</span>
                             <span class="label">km/h</span>
-                        </div>
-                        <div class="stat">
-                            <span class="value" id="lane3-traffic">0%</span>
+                        </div> -->
+                        <!-- <div class="stat">
+                            <span class="value" id="lane3-traffic">56%</span>
                             <span class="label">Traffic</span>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
 
                 <div class="camera-feed lane-4">
                     <div class="camera-header">
                         <span class="lane-label">Lane 4</span>
-                        <span class="status-indicator active">
+                        <span class="status-indicator active" id="lane4-status-indicator">
                             <i class="fas fa-check-circle"></i> ACTIVE
                         </span>
-                        <span class="direction">West</span>
+                        <!-- <span class="direction">West</span> -->
                     </div>
                     <div class="video-container">
                         <img src="{{ url_for('video_feed', lane_id=4, cache_bust=now) }}" alt="Lane 4 Feed" class="video-stream">
@@ -178,14 +173,14 @@
                             <span class="value" id="lane4-vehicles">18</span>
                             <span class="label">Vehicles</span>
                         </div>
-                        <div class="stat">
+                        <!-- <div class="stat">
                             <span class="value" id="lane4-speed">52</span>
                             <span class="label">km/h</span>
                         </div>
                         <div class="stat">
                             <span class="value traffic-medium" id="lane4-traffic">45%</span>
                             <span class="label">Traffic</span>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
             </div>
@@ -195,11 +190,11 @@
                     <span class="label">Total Vehicles:</span>
                     <span class="value" id="total-vehicles">65</span>
                 </div>
-                <div class="stat-item">
+                <!-- <div class="stat-item">
                     <span class="label">Avg Speed:</span>
                     <span class="value" id="avg-speed">44</span>
                     <span class="unit">km/h</span>
-                </div>
+                </div> -->
                 <div class="system-status">
                     <span class="status-text">All Systems Online - 10:51 PM</span>
                 </div>
@@ -233,45 +228,41 @@
                                 <div class="stat-label">Total Vehicles</div>
                             </div>
                             <div class="stat-box">
-                                <div class="stat-value" id="avg-speed-comp">44</div>
-                                <div class="stat-label">Avg Speed (km/h)</div>
-                            </div>
-                            <div class="stat-box">
                                 <div class="stat-value" id="avg-congestion">62%</div>
                                 <div class="stat-label">Avg Congestion</div>
                             </div>
                         </div>
                         
                         <div class="vehicle-distribution">
-                            <h4>Vehicle Types Distribution</h4>
+                            <h4>Vehicle Lane Distribution</h4>
                             <div class="distribution-bars">
                                 <div class="bar-item">
-                                    <span class="bar-label">Cars</span>
+                                    <span class="bar-label">Lane 1</span>
                                     <div class="bar-container">
-                                        <div class="bar bar-cars" style="width: 65%"></div>
+                                        <div class="bar bar-lane-1" style="width: 0%"></div>
                                     </div>
-                                    <span class="bar-value">65%</span>
+                                    <span class="bar-value">0%</span>
                                 </div>
                                 <div class="bar-item">
-                                    <span class="bar-label">Trucks</span>
+                                    <span class="bar-label">Lane 2</span>
                                     <div class="bar-container">
-                                        <div class="bar bar-trucks" style="width: 20%"></div>
+                                        <div class="bar bar-lane-2" style="width: 0%"></div>
                                     </div>
-                                    <span class="bar-value">20%</span>
+                                    <span class="bar-value">0%</span>
                                 </div>
                                 <div class="bar-item">
-                                    <span class="bar-label">Buses</span>
+                                    <span class="bar-label">Lane 3</span>
                                     <div class="bar-container">
-                                        <div class="bar bar-buses" style="width: 10%"></div>
+                                        <div class="bar bar-lane-3" style="width: 0%"></div>
                                     </div>
-                                    <span class="bar-value">10%</span>
+                                    <span class="bar-value">0%</span>
                                 </div>
                                 <div class="bar-item">
-                                    <span class="bar-label">Bikes</span>
+                                    <span class="bar-label">Lane 4</span>
                                     <div class="bar-container">
-                                        <div class="bar bar-bikes" style="width: 5%"></div>
+                                        <div class="bar bar-lane-4" style="width: 0%"></div>
                                     </div>
-                                    <span class="bar-value">5%</span>
+                                    <span class="bar-value">0%</span>
                                 </div>
                             </div>
                         </div>
@@ -349,111 +340,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Lane Usage & Performance Card -->
-                 <div class="component-card">
-    <div class="card-header card-header-Lane-Usage">
-        <h3><i class="fas fa-road"></i> Lane Usage & Performance</h3>
-    </div>
-    <div class="card-content card-content-Lane-Usage">
-        <div class="lane-performance">
-
-            <!-- Lane 1 -->
-            <div class="lane-item">
-                <div class="lane-header">
-                    <span class="lane-name">Lane 1</span>
-                    <span class="lane-direction">North</span>
-                    <span class="status-badge" id="lane1-status">WARNING</span>
-                </div>
-                <div class="lane-stats">
-                    <div class="lane-stat">
-                        <span class="value" id="lane1-vehicles">23</span>
-                        <span class="label">Vehicles</span>
-                    </div>
-                    <div class="lane-stat">
-                        <span class="value" id="lane1-speed">45</span>
-                        <span class="label">km/h</span>
-                    </div>
-                    <div class="lane-stat">
-                        <span class="value" id="lane1-traffic">78%</span>
-                        <span class="label">Congestion</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Lane 2 -->
-            <div class="lane-item">
-                <div class="lane-header">
-                    <span class="lane-name">Lane 2</span>
-                    <span class="lane-direction">South</span>
-                    <span class="status-badge" id="lane2-status">ACTIVE</span>
-                </div>
-                <div class="lane-stats">
-                    <div class="lane-stat">
-                        <span class="value" id="lane2-vehicles">15</span>
-                        <span class="label">Vehicles</span>
-                    </div>
-                    <div class="lane-stat">
-                        <span class="value" id="lane2-speed">62</span>
-                        <span class="label">km/h</span>
-                    </div>
-                    <div class="lane-stat">
-                        <span class="value" id="lane2-traffic">34%</span>
-                        <span class="label">Congestion</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Lane 3 -->
-            <div class="lane-item">
-                <div class="lane-header">
-                    <span class="lane-name">Lane 3</span>
-                    <span class="lane-direction">East</span>
-                    <span class="status-badge" id="lane3-status">INACTIVE</span>
-                </div>
-                <div class="lane-stats">
-                    <div class="lane-stat">
-                        <span class="value" id="lane3-vehicles">8</span>
-                        <span class="label">Vehicles</span>
-                    </div>
-                    <div class="lane-stat">
-                        <span class="value" id="lane3-speed">30</span>
-                        <span class="label">km/h</span>
-                    </div>
-                    <div class="lane-stat">
-                        <span class="value" id="lane3-traffic">56%</span>
-                        <span class="label">Congestion</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Lane 4 -->
-            <div class="lane-item">
-                <div class="lane-header">
-                    <span class="lane-name">Lane 4</span>
-                    <span class="lane-direction">West</span>
-                    <span class="status-badge" id="lane4-status">WARNING</span>
-                </div>
-                <div class="lane-stats">
-                    <div class="lane-stat">
-                        <span class="value" id="lane4-vehicles">19</span>
-                        <span class="label">Vehicles</span>
-                    </div>
-                    <div class="lane-stat">
-                        <span class="value" id="lane4-speed">50</span>
-                        <span class="label">km/h</span>
-                    </div>
-                    <div class="lane-stat">
-                        <span class="value" id="lane4-traffic">65%</span>
-                        <span class="label">Congestion</span>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</div>
-
 
             </div>
         </div>

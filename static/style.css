@@ -365,7 +365,7 @@ body {
 
 .stats-row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
     margin-bottom: 2rem;
 }
@@ -427,6 +427,12 @@ body {
 .bar-trucks { background: linear-gradient(90deg, #ef4444, #dc2626); }
 .bar-buses { background: linear-gradient(90deg, #f59e0b, #d97706); }
 .bar-bikes { background: linear-gradient(90deg, #10b981, #059669); }
+/* FIX: Add styles for the new lane distribution bars */
+.bar-lane-1 { background: linear-gradient(90deg, #f59e0b, #d97706); } /* Orange */
+.bar-lane-2 { background: linear-gradient(90deg, #10b981, #059669); } /* Green */
+.bar-lane-3 { background: linear-gradient(90deg, #ef4444, #dc2626); } /* Red */
+.bar-lane-4 { background: linear-gradient(90deg, #8b5cf6, #7c3aed); } /* Purple */
+
 
 .bar-label {
     font-weight: 500;

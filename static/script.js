@@ -42,11 +42,9 @@ async function updateDashboardData() {
         
         // Update vehicle statistics in Manageable Components tab
         const totalVehiclesCompElem = document.querySelector('#manageable-components #total-vehicles');
-        const avgSpeedCompElem = document.getElementById('avg-speed-comp');
         const avgCongestionElem = document.getElementById('avg-congestion');
         
         if (totalVehiclesCompElem) totalVehiclesCompElem.textContent = data.total_vehicles;
-        if (avgSpeedCompElem) avgSpeedCompElem.textContent = data.avg_speed;
         if (avgCongestionElem) avgCongestionElem.textContent = data.avg_congestion + '%';
         
         // Update alerts
@@ -135,54 +133,26 @@ async function updateDashboardData() {
                 }
             }
             
-            // Update Lane Usage & Performance section (in Manageable Components tab)
-            const laneVehiclesElem = document.querySelector(`#manageable-components .lane-item:nth-child(${laneNum}) .lane-stat:nth-child(1) .value`);
-            const laneSpeedElem = document.querySelector(`#manageable-components .lane-item:nth-child(${laneNum}) .lane-stat:nth-child(2) .value`);
-            const laneTrafficElem = document.querySelector(`#manageable-components .lane-item:nth-child(${laneNum}) .lane-stat:nth-child(3) .value`);
-            const laneStatusElem = document.querySelector(`#manageable-components .lane-item:nth-child(${laneNum}) .status-badge`);
-            
-            if (laneVehiclesElem) laneVehiclesElem.textContent = lane.vehicles;
-            if (laneSpeedElem) laneSpeedElem.textContent = lane.speed;
-            if (laneTrafficElem) laneTrafficElem.textContent = lane.traffic + '%';
-            
-            if (laneStatusElem) {
-                laneStatusElem.textContent = lane.status;
-                // Update status badge classes
-                laneStatusElem.className = 'status-badge';
-                if (lane.status === 'WARNING') {
-                    laneStatusElem.classList.add('warning');
-                } else if (lane.status === 'ACTIVE') {
-                    laneStatusElem.classList.add('active');
-                } else if (lane.status === 'ERROR') {
-                    laneStatusElem.classList.add('error');
-                }
-            }
         });
 
         //lane alerts
         
-        // Update vehicle distribution bars
-        const distribution = data.vehicle_distribution;
-        const barCars = document.querySelector('.bar-cars');
-        const barTrucks = document.querySelector('.bar-trucks');
-        const barBuses = document.querySelector('.bar-buses');
-        const barBikes = document.querySelector('.bar-bikes');
-        
-        if (barCars) {
-            barCars.style.width = distribution.cars + '%';
-            barCars.parentElement.nextElementSibling.textContent = distribution.cars + '%';
-        }
-        if (barTrucks) {
-            barTrucks.style.width = distribution.trucks + '%';
-            barTrucks.parentElement.nextElementSibling.textContent = distribution.trucks + '%';
-        }
-        if (barBuses) {
-            barBuses.style.width = distribution.buses + '%';
-            barBuses.parentElement.nextElementSibling.textContent = distribution.buses + '%';
-        }
-        if (barBikes) {
-            barBikes.style.width = distribution.bikes + '%';
-            barBikes.parentElement.nextElementSibling.textContent = distribution.bikes + '%';
+        // Update Vehicle Lane Distribution bars using real data
+        if (data.lanes && data.total_vehicles > 0) {
+            data.lanes.forEach(lane => {
+                const laneId = lane.id;
+                const percentage = Math.round((lane.vehicles / data.total_vehicles) * 100);
+                
+                const barElement = document.querySelector(`.bar-lane-${laneId}`);
+                const valueElement = barElement ? barElement.parentElement.nextElementSibling : null;
+
+                if (barElement) {
+                    barElement.style.width = `${percentage}%`;
+                }
+                if (valueElement) {
+                    valueElement.textContent = `${percentage}%`;
+                }
+            });
         }
 
         // Pass the consistent lane data to the traffic simulation module
