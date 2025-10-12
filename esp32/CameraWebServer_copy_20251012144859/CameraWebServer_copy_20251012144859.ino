@@ -2,6 +2,7 @@
 
 #include "esp_camera.h"
 #include <WiFi.h>
+#include "traffic_globals.h" // <--- ADD THIS LINE
 
 // ===========================
 // Select camera model in board_config.h
@@ -20,7 +21,7 @@ const char *password = "yashyelave";
 // GPIO 4 is the flash LED on the AI-THINKER board, we'll use it as the green light.
 const int greenLedPin = 4;
 // GPIO 33 is the onboard red status LED.
-const int redLedPin = 33;
+const int redLedPin = 13;
 
 // Volatile variables to be safely changed by web server events
 volatile unsigned long greenLightEndTime = 0;

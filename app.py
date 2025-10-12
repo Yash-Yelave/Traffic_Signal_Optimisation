@@ -5,23 +5,34 @@ import random
 import time
 import threading
 from datetime import datetime
+import atexit
 import requests 
 
 # --- AI DETECTION INTEGRATION ---
 from modules.detection import VehicleDetector
 # --- END AI DETECTION INTEGRATION ---
+# --- DQN AGENT INTEGRATION ---
+from modules.dqn import TrafficDQNManager
+# --- END DQN AGENT INTEGRATION ---
 
 from static.modules.traffic_signal_backend import map_lane_data_to_signal_format, set_active_green_lane, SIGNAL_STATE
 
 app = Flask(__name__)
 
 # --- AI DETECTION INTEGRATION ---
+# Initialize the YOLO detector.
 # Initialize the YOLO vehicle detector once when the application starts.
 vehicle_detector = VehicleDetector()
 # Global variable to store live counts for all lanes.
 # Initialized with zeros.
 REALTIME_DATA = {"vehicle_counts": {1: 0, 2: 0, 3: 0, 4: 0}}
 # --- END AI DETECTION INTEGRATION ---
+
+# --- DQN AGENT INTEGRATION ---
+# Initialize the DQN Manager. This will be our AI brain.
+# It will automatically try to load a model from the specified path on initialization.
+dqn_manager = TrafficDQNManager(model_path="models/dqn_agent.pth")
+# --- END DQN AGENT INTEGRATION ---
 
 # ESP32-CAM IP address
 ESP32_IP = "192.168.72.86" # Restored from README, please verify this is correct
@@ -413,10 +424,13 @@ def generate_detection_frames_from_webcam():
         while True:
             ret, frame = cap.read()
             if not ret: break
-            ret, buffer = cv2.imencode('.jpg', frame)
-            if not ret: continue
             
-            vehicle_count, annotated_frame = vehicle_detector.detect_vehicles(buffer.tobytes())
+            # FIX: The frame must be encoded to JPEG bytes before being passed to the detector,
+            # just like in the generate_frames_from_file function.
+            (flag, encoded_image) = cv2.imencode(".jpg", frame)
+            if not flag:
+                continue
+            vehicle_count, annotated_frame = vehicle_detector.detect_vehicles(encoded_image.tobytes())
             REALTIME_DATA["vehicle_counts"][1] = vehicle_count
 
             yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + annotated_frame + b'\r\n')
@@ -440,7 +454,81 @@ def set_signal_from_ai():
     # print(f"Signal Updated by AI: Lane {lane_id} is now GREEN") # Optional: for debugging
     return jsonify({'status': 'success', 'message': f'Signal for lane {lane_id} set to green.'})
 
+# --- DQN AGENT INTEGRATION ---
+def run_dqn_control_loop():
+    """
+    The main control loop for the AI. This runs in a background thread.
+    It follows the standard reinforcement learning loop:
+    1. Observe the state of the environment.
+    2. Ask the agent to choose an action.
+    3. Perform the action (change the traffic light).
+    4. Wait for the action to complete.
+    5. Observe the new state.
+    6. Calculate the reward and train the agent on the experience.
+    """
+    print("🤖 Starting DQN Control Loop...")
+    time.sleep(5) # Wait a bit for the system to initialize
+
+    # Initialize variables to store the *previous* state and action for learning
+    last_state_data = None
+
+    while True:
+        print("\n" + "="*50)
+        print(f"CYCLE START @ {datetime.now().strftime('%H:%M:%S')}")
+        print("="*50)
+
+        # 1. OBSERVE NEW STATE (Snapshot 2): Get vehicle counts after the last action.
+        # This is our "instance" of the data.
+        current_counts = list(REALTIME_DATA["vehicle_counts"].copy().values())
+        ambulance_flags = [0] * 4
+
+        # 2. LEARN from the previous cycle's experience.
+        # If we have a completed experience from the last cycle, learn from it now.
+        if last_state_data:
+            # Unpack the data from the previous cycle
+            prev_counts, prev_amb_flags, prev_action_index = last_state_data
+            # The 'current_counts' are the 'next_counts' for the previous action.
+            dqn_manager.remember_experience(
+                prev_counts=prev_counts,
+                ambulance_flags=prev_amb_flags,
+                action_index=prev_action_index,
+                next_counts=current_counts
+            )
+
+        # 3. DECIDE on a new action based on the new state.
+        (lane_to_activate, green_time), action_index, reason = dqn_manager.get_action(current_counts, ambulance_flags)
+
+        # 4. ACT: Perform the chosen action by updating the traffic signal.
+        set_active_green_lane(lane_to_activate, green_time)
+        
+        # Store the state and action from THIS cycle so we can learn from it in the NEXT cycle.
+        # This is our "instance" of the "before" state (Snapshot 1 for the next cycle).
+        last_state_data = (current_counts, ambulance_flags, action_index)
+
+        # 5. WAIT & TRAIN: Wait for the green light duration while training the agent in the background.
+        print(f"⏳ Executing action... Waiting for {green_time}s and training in background.")
+        end_time = time.time() + green_time
+        while time.time() < end_time:
+            # Use the idle time to train the agent on past experiences
+            dqn_manager.learn_from_memory()
+            # Sleep for a short duration to prevent this loop from hogging the CPU
+            time.sleep(0.1)
+
+# --- END DQN AGENT INTEGRATION ---
+
 if __name__ == "__main__":
+    # --- DQN AGENT INTEGRATION ---
+    # Register the save function to be called automatically when the app exits.
+    # This ensures that training progress is not lost.
+    atexit.register(dqn_manager.save_agent_state)
+
+    # --- DQN AGENT INTEGRATION ---
+    # Start the DQN control loop in a separate thread.
+    # The `daemon=True` flag ensures the thread will exit when the main app exits.
+    dqn_thread = threading.Thread(target=run_dqn_control_loop, daemon=True)
+    dqn_thread.start()
+    # --- END DQN AGENT INTEGRATION ---
+
     app.run(debug=True, host="0.0.0.0", port=5000)
 
     #version 1.1
