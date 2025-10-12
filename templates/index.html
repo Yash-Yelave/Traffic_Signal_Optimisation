@@ -81,7 +81,8 @@
                         <!-- <span class="direction">North</span> -->
                     </div>
                     <div class="video-container">
-                        <img src="{{ url_for('video_feed', lane_id=1, cache_bust=now) }}" alt="Lane 1 Feed" class="video-stream">
+                        <!-- CHANGE: Point Lane 1's feed to the annotated stream -->
+                        <img src="{{ url_for('traffic_detection_feed', cache_bust=now) }}" alt="Lane 1 Live Detection" class="video-stream">
                         <!-- <div class="video-overlay">
                             <div class="alert-message">Heavy congestion detected</div>
                         </div> -->
@@ -350,6 +351,9 @@
                 <h2><i class="fas fa-eye"></i> Traffic Detection View - Live Intersection Monitoring</h2>
             </div>
             
+            <!-- REMOVED: The separate detection video feed is no longer needed here. -->
+            <!-- It has been moved to the Lane 1 card on the first tab. -->
+
             <div class="traffic-signal-wrapper">
                 <div class="signal-header">
                     <h3>Traffic Intersection Simulation</h3>
