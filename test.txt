@@ -1,0 +1,54 @@
+✅ 1. Core UI & Navigation
+[ ] Page Load: Does the UrbanFlow AI dashboard load correctly without any console errors on the first visit?
+[ ] Tab Switching:
+[ ] Does clicking on each tab ("Live Camera Feed", "AI Manageable Components", "Traffic Detection View") correctly show its content?
+[ ] Does the clicked tab become highlighted (active state)?
+[ ] Is the "Live Camera Feed" tab active by default?
+[ ] Responsiveness:
+[ ] Resize the browser window to a smaller width (like a tablet or mobile phone). Does the layout adjust gracefully?
+[ ] Check if the header, camera grid, and component cards stack vertically on small screens as defined in style.css.
+✅ 2. Live Camera Feed Tab
+[ ] Video Streams:
+[ ] Are all four video feeds (Lane 1-4) loading and displaying a live stream?
+[ ] Is the recently fixed Lane 3 feed now visible? (templates/index.html)
+[ ] Dynamic Data Updates (every 3 seconds):
+[ ] Does the "Vehicles" count under each lane's video feed update correctly?
+[ ] Does the "Total Vehicles" count at the bottom of the tab update correctly?
+[ ] Lane Status Indicators:
+[ ] Does the status indicator for each lane (ACTIVE, WARNING, ERROR) update its color and text based on the data from the API?
+[ ] Does the pulse animation work on the status indicators?
+[ ] Main Header Status:
+[ ] Does the "All 4 Lanes Active" badge in the main header change its text and color (active, warning, error) based on the collective status of all lanes?
+[ ] ESP32-CAM Flash Control:
+[ ] Click the "Flash ON" button. Does the camera flash turn on?
+[ ] Does a success message (✓ Flash turned on) appear?
+[ ] Click the "Flash OFF" button. Does the camera flash turn off?
+[ ] Does a success message (✓ Flash turned off) appear?
+[ ] If the ESP32-CAM is disconnected, does clicking a button show a connection error message?
+✅ 3. AI Manageable Components Tab
+[ ] Vehicle Statistics Card:
+[ ] Does the "Total Vehicles" value match the one on the Live Camera Feed tab?
+[ ] Does the "Avg Congestion" value update correctly?
+[ ] Vehicle Lane Distribution Card:
+[ ] Do the progress bars for each lane update their width based on the percentage of vehicles in that lane?
+[ ] Do the percentage values next to the bars update correctly?
+[ ] Traffic Control Center Card:
+[ ] Does exactly one lane show a GREEN status at any given time?
+[ ] Do the other three lanes show a RED status?
+[ ] Does the green lane display a countdown timer (e.g., GREEN (15s))?
+[ ] Does the countdown decrease by one every second?
+[ ] When the timer reaches 0, does the green light switch to a different lane as dictated by the backend logic?
+[ ] Live Alerts & Notifications Card:
+[ ] Do the "ACCIDENT" and "HIGH CONGESTION" sections display the latest alert data from the API?
+[ ] Do the message, type, and timestamp update correctly?
+✅ 4. Traffic Detection View Tab (Simulation)
+[ ] Initialization: Does the simulation only start rendering when you click on its tab for the first time? (As intended by the MutationObserver in traffic_signal.js).
+[ ] Traffic Light Synchronization:
+[ ] Do the traffic light colors in the simulation (the large intersection) match the statuses shown in the "Traffic Control Center" card?
+[ ] For example, if Lane 1 is GREEN in the control center, is the light for Lane 1 (North) green in the simulation?
+[ ] Vehicle Rendering:
+[ ] Are vehicles (🚗) being rendered in each lane of the simulation?
+[ ] Does the number of rendered vehicles visually correspond to the "Total Vehicles" count for that lane in the stats panel?
+[ ] Statistics Panel:
+[ ] Does the stats panel on the right correctly display the vehicle count and signal color for each of the four lanes?
+[ ] Does this data match the rest of the dashboard?
