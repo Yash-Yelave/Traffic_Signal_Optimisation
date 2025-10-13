@@ -35,7 +35,7 @@ dqn_manager = TrafficDQNManager(model_path="models/dqn_agent.pth")
 # --- END DQN AGENT INTEGRATION ---
 
 # ESP32-CAM IP address
-ESP32_IP = "192.168.72.86" # Restored from README, please verify this is correct
+ESP32_IP = "10.44.36.86" # Restored from README, please verify this is correct
 # Combined stream URL constant for requests
 ESP32_STREAM_URL = f'http://{ESP32_IP}:81/stream'
 
@@ -338,6 +338,7 @@ def generate_frames_from_file(video_path, lane_id):
             if not cap.isOpened():
                 print(f"[Video File] Error: Could not open video file {video_path}")
                 break # Exit the loop if file can't be opened
+            frame_count = 0 # --- FPS OPTIMIZATION: Frame counter for skipping
 
             while True:
                 ret, frame = cap.read()
@@ -345,6 +346,13 @@ def generate_frames_from_file(video_path, lane_id):
                     break # End of video, will restart due to outer loop
                 
                 # Encode frame to JPEG bytes to pass to the detector
+                frame_count += 1
+                # --- FPS OPTIMIZATION: Process every 2nd frame to reduce load ---
+                if frame_count % 2 != 0:
+                    # For skipped frames, just yield the raw frame without detection
+                    ret, buffer = cv2.imencode('.jpg', frame)
+                    yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+                    continue
                 (flag, encoded_image) = cv2.imencode(".jpg", frame)
                 if not flag:
                     continue
@@ -368,10 +376,11 @@ def generate_detection_frames():
     is_esp_stream_successful = False
     try:
         print(f"[{datetime.now().strftime('%H:%M:%S')}] Detection client connected. Connecting to ESP32 stream...")
-        response = requests.get(ESP32_STREAM_URL, stream=True, timeout=5) # Reduced timeout
+        response = requests.get(ESP32_STREAM_URL, stream=True, timeout=10) # Increased timeout for more robust connection
         if response.status_code == 200:
             is_esp_stream_successful = True
             bytes_buffer = b''
+            frame_count = 0 # --- FPS OPTIMIZATION: Frame counter for skipping
             for chunk in response.iter_content(chunk_size=4096): # Increased chunk size
                 bytes_buffer += chunk
                 start = bytes_buffer.find(b'\xff\xd8') # JPEG start
@@ -379,6 +388,13 @@ def generate_detection_frames():
                 if start != -1 and end != -1 and end > start:
                     jpeg_bytes = bytes_buffer[start:end+2]
                     bytes_buffer = bytes_buffer[end+2:]
+                    
+                    frame_count += 1
+                    # --- FPS OPTIMIZATION: Process every 2nd frame to reduce load ---
+                    if frame_count % 2 != 0:
+                        # For skipped frames, just yield the raw frame without detection
+                        yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + jpeg_bytes + b'\r\n')
+                        continue
 
                     # Process the frame with YOLO
                     vehicle_count, annotated_frame = vehicle_detector.detect_vehicles(jpeg_bytes)

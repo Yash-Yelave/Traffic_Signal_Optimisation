@@ -14,7 +14,7 @@ class VehicleDetector:
     A class to handle vehicle detection using a YOLO model.
     It's designed to be initialized once and then process frames on demand.
     """
-    def __init__(self, model_path='modules\yolo11m.pt'):
+    def __init__(self, model_path='yolov8n.pt'):
         """
         Initializes the VehicleDetector.
 
@@ -32,11 +32,9 @@ class VehicleDetector:
             self.model.to(self.device)
             print(f"[Detection] YOLO model '{model_path}' loaded successfully.")
         except Exception as e:
-            print(f"[Detection] FATAL ERROR: Could not load YOLO model from '{model_path}'.")
+            print(f"[Detection] FATAL ERROR: Could not load YOLO model from '{model_path}'. The application cannot continue.")
             print(f"[Detection] Error details: {e}")
-            print("[Detection] The application cannot continue without the model. Please ensure the model file exists and is accessible.")
             self.model = None
-            exit() # Forcefully stop the application if the model fails to load.
 
         # Define the classes to be considered as vehicles.
         # Common YOLO class IDs: 2=car, 3=motorcycle, 5=bus, 7=truck
@@ -44,7 +42,7 @@ class VehicleDetector:
         # --- DEBUGGING: Lower the threshold to catch weak detections ---
         # A low value like 0.1 makes it much more likely to see boxes.
         # We can tune this back up once we confirm it's working.
-        self.confidence_threshold = 0.1
+        self.confidence_threshold = 0.3 # Tuned up slightly from 0.1
 
     def detect_vehicles(self, frame_bytes):
         """
@@ -78,8 +76,13 @@ class VehicleDetector:
         except Exception as e:
             return create_error_frame(f"ERROR: Decoding Failed", frame_bytes)
 
+        # --- FPS OPTIMIZATION: Resize the frame before detection ---
+        # Processing a smaller image is significantly faster.
+        resized_frame = cv2.resize(frame, (640, 480))
+
         # Perform detection on the decoded frame
-        results = self.model(frame, stream=False, verbose=False, device=self.device)
+        # --- FPS OPTIMIZATION: Use the resized frame for detection ---
+        results = self.model(resized_frame, stream=False, verbose=False, device=self.device)
         result = results[0]
 
         vehicle_count = 0
@@ -92,7 +95,16 @@ class VehicleDetector:
                 if class_id in self.vehicle_class_ids:
                     vehicle_count += 1
                     
-                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+                    # --- FIX: Scale bounding box coordinates back to the original frame size ---
+                    # The box coordinates are for the resized_frame, so we must scale them
+                    # up to draw them correctly on the original, larger 'frame'.
+                    orig_h, orig_w = frame.shape[:2]
+                    resized_h, resized_w = resized_frame.shape[:2]
+                    x1, y1, x2, y2 = box.xyxy[0]
+                    x1 = int(x1 * orig_w / resized_w)
+                    y1 = int(y1 * orig_h / resized_h)
+                    x2 = int(x2 * orig_w / resized_w)
+                    y2 = int(y2 * orig_h / resized_h)
                     
                     # Draw the box and label for the detected vehicle
                     label = f"{result.names[class_id]} {box.conf.item():.2f}"
