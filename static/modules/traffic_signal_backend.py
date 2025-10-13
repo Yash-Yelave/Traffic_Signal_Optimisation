@@ -1,5 +1,6 @@
 # Traffic Signal Backend Module - Integrated with existing app.py data
 import time
+import requests
 import random
 
 # --- DEMO CONFIGURATION ---
@@ -13,10 +14,23 @@ SIGNAL_STATE = {
 }
 
 def set_active_green_lane(lane_id, green_time=8):
-    """Updates the active green lane ID from an external source (like an API call)."""
+    """
+    Updates the active green lane ID and sends a command to the ESP32 if the lane is 1.
+    """
     SIGNAL_STATE["active_green_lane_id"] = lane_id
     SIGNAL_STATE["green_time_start"] = time.time()
     SIGNAL_STATE["green_time_duration"] = green_time
+
+    # If the target lane is Lane 1, send a command to the physical ESP32 signal.
+    if lane_id == 1:
+        esp32_signal_ip = "10.44.36.86"
+        command_url = f"http://{esp32_signal_ip}/start-green?time={int(green_time)}"
+        try:
+            print(f"🚦 Sending GREEN command to ESP32 for Lane 1: {command_url}")
+            requests.get(command_url, timeout=3)
+            print("✅ ESP32 command sent successfully.")
+        except requests.exceptions.RequestException as e:
+            print(f"❌ ERROR: Could not send command to ESP32 for Lane 1. Details: {e}")
 
 
 def map_lane_data_to_signal_format(lane_feeds_data):

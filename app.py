@@ -80,6 +80,10 @@ def get_unified_traffic_data():
     This function generates the core lane data that is used by both
     dashboard and lane feeds endpoints.
     """
+    # --- FIX: Define a realistic capacity to calculate congestion ---
+    # This ensures the 'traffic' metric is directly tied to the real vehicle count.
+    LANE_CAPACITY = 30 # Assume a max of 30 vehicles can fit in a lane's view.
+
     # Generate base lane data
     lanes = [
         {
@@ -91,8 +95,9 @@ def get_unified_traffic_data():
             # Use the real-time vehicle count from the YOLO detector for each lane.
             'vehicles': REALTIME_DATA["vehicle_counts"].get(1, 0),
             # --- END AI DETECTION INTEGRATION ---
-            'speed': random.randint(40, 50),
-            'traffic': random.randint(70, 85),
+            'speed': max(0, 50 - REALTIME_DATA["vehicle_counts"].get(1, 0)), # Simulated speed decreases with more cars
+            # --- FIX: Calculate traffic congestion based on real vehicle counts ---
+            'traffic': min(100, int((REALTIME_DATA["vehicle_counts"].get(1, 0) / LANE_CAPACITY) * 100)),
             'alert': 'Heavy congestion detected'
         },
         {
@@ -101,8 +106,8 @@ def get_unified_traffic_data():
             'status': 'ACTIVE',
             'direction': 'South',
             'vehicles': REALTIME_DATA["vehicle_counts"].get(2, 0),
-            'speed': random.randint(55, 70),
-            'traffic': random.randint(30, 45),
+            'speed': max(0, 60 - REALTIME_DATA["vehicle_counts"].get(2, 0)),
+            'traffic': min(100, int((REALTIME_DATA["vehicle_counts"].get(2, 0) / LANE_CAPACITY) * 100)),
             'alert': None
         },
         {
@@ -111,8 +116,8 @@ def get_unified_traffic_data():
             'status': 'ACTIVE',
             'direction': 'East',
             'vehicles': REALTIME_DATA["vehicle_counts"].get(3, 0),
-            'speed': random.randint(25, 40),
-            'traffic': random.randint(50, 65),
+            'speed': max(0, 45 - REALTIME_DATA["vehicle_counts"].get(3, 0)),
+            'traffic': min(100, int((REALTIME_DATA["vehicle_counts"].get(3, 0) / LANE_CAPACITY) * 100)),
             'alert': 'Accident detected'
         },
         {
@@ -121,8 +126,8 @@ def get_unified_traffic_data():
             'status': 'ACTIVE',
             'direction': 'West',
             'vehicles': REALTIME_DATA["vehicle_counts"].get(4, 0),
-            'speed': random.randint(45, 60),
-            'traffic': random.randint(40, 60),
+            'speed': max(0, 55 - REALTIME_DATA["vehicle_counts"].get(4, 0)),
+            'traffic': min(100, int((REALTIME_DATA["vehicle_counts"].get(4, 0) / LANE_CAPACITY) * 100)),
             'alert': None
         }
     ]
@@ -471,16 +476,18 @@ def run_dqn_control_loop():
 
     # Initialize variables to store the *previous* state and action for learning
     last_state_data = None
+    # Initialize ambulance flags. In a real system, this would be updated from a sensor.
+    ambulance_flags = [0] * 4
 
     while True:
         print("\n" + "="*50)
         print(f"CYCLE START @ {datetime.now().strftime('%H:%M:%S')}")
         print("="*50)
 
-        # 1. OBSERVE NEW STATE (Snapshot 2): Get vehicle counts after the last action.
-        # This is our "instance" of the data.
+        # 1. OBSERVE NEW STATE (Snapshot 2): Get vehicle counts and ambulance flags after the last action.
+        # In a real system, ambulance_flags would be updated here from sensors.
+        # For now, we'll manage it based on the agent's last action.
         current_counts = list(REALTIME_DATA["vehicle_counts"].copy().values())
-        ambulance_flags = [0] * 4
 
         # 2. LEARN from the previous cycle's experience.
         # If we have a completed experience from the last cycle, learn from it now.
@@ -501,6 +508,11 @@ def run_dqn_control_loop():
         # 4. ACT: Perform the chosen action by updating the traffic signal.
         set_active_green_lane(lane_to_activate, green_time)
         
+        # After acting, if we cleared a lane with an ambulance, update the flag for the next state observation.
+        # This makes the simulation more realistic.
+        if ambulance_flags[lane_to_activate - 1] == 1:
+            ambulance_flags[lane_to_activate - 1] = 0
+
         # Store the state and action from THIS cycle so we can learn from it in the NEXT cycle.
         # This is our "instance" of the "before" state (Snapshot 1 for the next cycle).
         last_state_data = (current_counts, ambulance_flags, action_index)
@@ -514,6 +526,13 @@ def run_dqn_control_loop():
             # Sleep for a short duration to prevent this loop from hogging the CPU
             time.sleep(0.1)
 
+        # --- NEW: Log performance metrics at the end of the cycle ---
+        avg_reward, avg_loss, avg_q = dqn_manager.get_and_reset_cycle_metrics()
+        print("="*50)
+        print(f"📈 CYCLE STATS: Avg Reward: {avg_reward:.2f} | Avg Loss: {avg_loss:.4f} | Avg Q-Value: {avg_q:.2f}")
+        print("="*50)
+
+import os # Import the os module
 # --- END DQN AGENT INTEGRATION ---
 
 if __name__ == "__main__":
@@ -522,13 +541,17 @@ if __name__ == "__main__":
     # This ensures that training progress is not lost.
     atexit.register(dqn_manager.save_agent_state)
 
-    # --- DQN AGENT INTEGRATION ---
-    # Start the DQN control loop in a separate thread.
-    # The `daemon=True` flag ensures the thread will exit when the main app exits.
-    dqn_thread = threading.Thread(target=run_dqn_control_loop, daemon=True)
-    dqn_thread.start()
-    # --- END DQN AGENT INTEGRATION ---
+    # --- FIX: Prevent the DQN thread from starting twice in debug mode ---
+    # The Werkzeug reloader (used in debug mode) can cause the app to initialize twice.
+    # We check the WERKZEUG_RUN_MAIN environment variable to ensure our background
+    # thread only starts in the main, user-facing process.
+    if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        # Start the DQN control loop in a separate thread.
+        # The `daemon=True` flag ensures the thread will exit when the main app exits.
+        dqn_thread = threading.Thread(target=run_dqn_control_loop, daemon=True)
+        dqn_thread.start()
 
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    # Running with use_reloader=False is an alternative if the above check causes issues.
+    app.run(debug=True, host="0.0.0.0", port=5000, use_reloader=True)
 
     #version 1.1
