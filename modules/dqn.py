@@ -90,33 +90,34 @@ class TrafficDQNManager:
         lane_wait_times = {i: now - self.last_serviced_time.get(i, 0) for i in range(LANES)}
 
         # --- Rule 1: Ambulance Priority ---
-        if any(flag == 1 for flag in ambulance_flags):
+        if any(ambulance_flags):
             lane_to_activate = np.argmax(ambulance_flags)
             reason = "Priority (Ambulance)"
             green_time = 16 # Give max time for ambulance
+            vehicle_count = current_counts[lane_to_activate]
 
         # --- Rule 2: Starvation Priority ---
-        else:
-            starving_lanes = {lane: count for lane, count in enumerate(current_counts) 
-                              if lane_wait_times[lane] > WAIT_TIME_THRESHOLD and count > 0}
-            if starving_lanes:
-                # Among starving lanes, pick the one with the most cars
-                lane_to_activate = max(starving_lanes, key=starving_lanes.get)
-                vehicle_count = current_counts[lane_to_activate]
-                reason = f"Starvation (> {int(WAIT_TIME_THRESHOLD)}s) | Vehicles: {vehicle_count}"
+        # else:
+            # starving_lanes = {lane: count for lane, count in enumerate(current_counts) 
+            #                   if lane_wait_times[lane] > WAIT_TIME_THRESHOLD and count > 0}
+            # if starving_lanes:
+            #     # Among starving lanes, pick the one with the most cars
+            #     lane_to_activate = max(starving_lanes, key=starving_lanes.get)
+            #     vehicle_count = current_counts[lane_to_activate]
+            #     reason = f"Starvation (> {int(WAIT_TIME_THRESHOLD)}s) | Vehicles: {vehicle_count}"
             
             # --- Rule 3: Congestion Priority ---
+        else: # This 'else' now follows the ambulance check directly
+            if sum(current_counts) == 0:
+                # If all lanes are empty, just pick lane 0 to keep the system running
+                lane_to_activate = 0
+                vehicle_count = 0
+                reason = "Default (All lanes empty)"
             else:
-                if sum(current_counts) == 0:
-                    # If all lanes are empty, just pick lane 0 to keep the system running
-                    lane_to_activate = 0
-                    vehicle_count = 0
-                    reason = "Default (All lanes empty)"
-                else:
-                    # Pick the lane with the most vehicles
-                    lane_to_activate = np.argmax(current_counts)
-                    vehicle_count = current_counts[lane_to_activate]
-                    reason = f"Congestion | Vehicles: {vehicle_count}"
+                # Pick the lane with the most vehicles
+                lane_to_activate = np.argmax(current_counts)
+                vehicle_count = current_counts[lane_to_activate]
+                reason = f"Congestion | Vehicles: {vehicle_count}"
 
             # --- Dynamic Green Time based on congestion ---
             if vehicle_count > 15:

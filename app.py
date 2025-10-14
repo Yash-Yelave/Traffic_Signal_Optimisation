@@ -1,17 +1,21 @@
 from flask import Flask, render_template, jsonify, Response, request
 import cv2
 import json
+import csv # --- CSV LOGGING ---
+import sqlite3 # --- SQLITE DB LOGGING ---
 import random
 import time
 import threading
 from datetime import datetime
 import atexit
+import os # Import os module for file existence check
 import requests 
 
 # --- AI DETECTION INTEGRATION ---
 from modules.detection import VehicleDetector
 # --- END AI DETECTION INTEGRATION ---
 # --- DQN AGENT INTEGRATION ---
+from modules.insights import get_insights_data
 from modules.dqn import TrafficDQNManager
 # --- END DQN AGENT INTEGRATION ---
 
@@ -39,6 +43,77 @@ ESP32_IP = "10.44.36.86" # Restored from README, please verify this is correct
 # Combined stream URL constant for requests
 ESP32_STREAM_URL = f'http://{ESP32_IP}:81/stream'
 
+# --- CSV LOGGING SETUP ---
+LOG_FILE = 'traffic_log.csv'
+LOG_HEADER = [
+    'timestamp', 'lane_1_vehicles', 'lane_2_vehicles', 'lane_3_vehicles', 'lane_4_vehicles',
+    'ambulance_lane_1', 'ambulance_lane_2', 'ambulance_lane_3', 'ambulance_lane_4',
+    'action_index', 'activated_lane', 'green_time', 'reason_for_action',
+    'avg_reward', 'avg_loss', 'avg_q_value'
+]
+
+# Function to initialize the log file with a header
+def initialize_log_file():
+    """Initializes the log file. Creates it with a header if it doesn't exist."""
+    file_exists = os.path.exists(LOG_FILE)
+    if not file_exists:
+        with open(LOG_FILE, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(LOG_HEADER)
+        print(f"📝 New log file '{LOG_FILE}' created with header.")
+    else:
+        print(f"📝 Appending to existing log file '{LOG_FILE}'.")
+
+def append_to_log(data_row):
+    with open(LOG_FILE, 'a', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=LOG_HEADER)
+        writer.writerow(data_row)
+# --- END CSV LOGGING SETUP ---
+
+# --- SQLITE DB LOGGING SETUP ---
+DB_FILE = 'traffic_log.db'
+
+def initialize_database():
+    """Initializes the SQLite database. Creates the log table if it doesn't exist."""
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    # Define the table schema with appropriate data types
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS traffic_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT NOT NULL,
+            lane_1_vehicles INTEGER, lane_2_vehicles INTEGER, lane_3_vehicles INTEGER, lane_4_vehicles INTEGER,
+            ambulance_lane_1 INTEGER, ambulance_lane_2 INTEGER, ambulance_lane_3 INTEGER, ambulance_lane_4 INTEGER,
+            action_index INTEGER,
+            activated_lane INTEGER,
+            green_time REAL,
+            reason_for_action TEXT,
+            avg_reward REAL,
+            avg_loss REAL,
+            avg_q_value REAL
+        )
+    ''')
+    conn.commit()
+    conn.close()
+    print(f"📝 Database '{DB_FILE}' is ready.")
+
+def append_to_db(data_row):
+    """Appends a new record to the SQLite database."""
+    # The keys in data_row must match the column names in the INSERT statement
+    sql = ''' INSERT INTO traffic_logs(timestamp, lane_1_vehicles, lane_2_vehicles, lane_3_vehicles, lane_4_vehicles,
+                                     ambulance_lane_1, ambulance_lane_2, ambulance_lane_3, ambulance_lane_4,
+                                     action_index, activated_lane, green_time, reason_for_action,
+                                     avg_reward, avg_loss, avg_q_value)
+              VALUES(:timestamp, :lane_1_vehicles, :lane_2_vehicles, :lane_3_vehicles, :lane_4_vehicles,
+                     :ambulance_lane_1, :ambulance_lane_2, :ambulance_lane_3, :ambulance_lane_4,
+                     :action_index, :activated_lane, :green_time, :reason_for_action,
+                     :avg_reward, :avg_loss, :avg_q_value) '''
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute(sql, data_row)
+    conn.commit()
+    conn.close()
+# --- END CSV LOGGING SETUP ---
 # --- VIDEO FILE INTEGRATION ---
 # Define paths to the pre-recorded video files for other lanes.
 # Please ensure these files exist at the specified paths.
@@ -254,6 +329,12 @@ def dashboard_data():
 def lane_feeds():
     return jsonify(get_lane_feeds_data())
 
+@app.route('/api/insights-data')
+def insights_data():
+    """API endpoint to get computed insights from the database."""
+    data = get_insights_data()
+    return jsonify(data)
+
 def generate_frames_on_demand():
     """
     Establishes a connection to the ESP32-CAM stream only when a client is connected.
@@ -301,9 +382,16 @@ def video_feed(lane_id):
     """All lanes use the same ESP32 cam stream from shared capture"""
     # --- VIDEO FILE INTEGRATION ---
     if lane_id == 1:
-        # Lane 1 uses the live ESP32 camera stream
-        return Response(generate_frames_on_demand(),
+        # --- TEMP FOR TESTING: Use Lane 3 video for Lane 1 ---
+        # This section makes Lane 1 use the video file from Lane 3 for testing/dataset creation.
+        # To revert to the live ESP32 camera, comment out these lines and uncomment the "ORIGINAL CODE" block below.
+        video_path = VIDEO_FILES[3] # Use lane 3's video
+        return Response(generate_frames_from_file(video_path, lane_id),
                         mimetype='multipart/x-mixed-replace; boundary=frame')
+        # --- END TEMP FOR TESTING ---
+        # --- ORIGINAL CODE: To use the live camera for Lane 1, uncomment the two lines below. ---
+        # return Response(generate_frames_on_demand(),
+        #                 mimetype='multipart/x-mixed-replace; boundary=frame')
     elif lane_id in VIDEO_FILES:
         # Other lanes use pre-recorded video files
         video_path = VIDEO_FILES[lane_id]
@@ -322,8 +410,16 @@ def traffic_detection_feed():
     and streams the annotated video (with bounding boxes) to the client.
     """
     # --- AI DETECTION INTEGRATION ---
-    return Response(generate_detection_frames(),
+    # --- TEMP FOR TESTING: Use Lane 3 video for the main detection feed ---
+    # This ensures the detection feed (which updates Lane 1's count) uses the same video file.
+    # To revert to the live ESP32 camera, comment out these lines and uncomment the "ORIGINAL CODE" block below.
+    video_path = VIDEO_FILES[3] # Use lane 3's video
+    return Response(generate_frames_from_file(video_path, 1), # The '1' is the lane_id
                     mimetype='multipart/x-mixed-replace; boundary=frame')
+    # --- END TEMP FOR TESTING ---
+    # --- ORIGINAL CODE: To use the live camera for detection, uncomment the two lines below. ---
+    # return Response(generate_detection_frames(),
+    #                 mimetype='multipart/x-mixed-replace; boundary=frame')
     # --- END AI DETECTION INTEGRATION ---
 
 def generate_frames_from_file(video_path, lane_id):
@@ -546,9 +642,23 @@ def run_dqn_control_loop():
         avg_reward, avg_loss, avg_q = dqn_manager.get_and_reset_cycle_metrics()
         print("="*50)
         print(f"📈 CYCLE STATS: Avg Reward: {avg_reward:.2f} | Avg Loss: {avg_loss:.4f} | Avg Q-Value: {avg_q:.2f}")
+        
+        # --- CSV LOGGING ---
+        # Prepare the data row for logging
+        log_data = {
+            'timestamp': datetime.now().isoformat(),
+            'lane_1_vehicles': current_counts[0], 'lane_2_vehicles': current_counts[1], 'lane_3_vehicles': current_counts[2], 'lane_4_vehicles': current_counts[3],
+            'ambulance_lane_1': ambulance_flags[0], 'ambulance_lane_2': ambulance_flags[1], 'ambulance_lane_3': ambulance_flags[2], 'ambulance_lane_4': ambulance_flags[3],
+            'action_index': action_index,
+            'activated_lane': lane_to_activate,
+            'green_time': green_time,
+            'reason_for_action': reason,
+            'avg_reward': f"{avg_reward:.2f}", 'avg_loss': f"{avg_loss:.4f}", 'avg_q_value': f"{avg_q:.2f}"
+        }
+        append_to_log(log_data)
+        append_to_db(log_data) # --- SQLITE DB LOGGING ---
         print("="*50)
 
-import os # Import the os module
 # --- END DQN AGENT INTEGRATION ---
 
 if __name__ == "__main__":
@@ -562,6 +672,8 @@ if __name__ == "__main__":
     # We check the WERKZEUG_RUN_MAIN environment variable to ensure our background
     # thread only starts in the main, user-facing process.
     if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        initialize_log_file() # --- CSV LOGGING --- Create the file and header on start
+        initialize_database() # --- SQLITE DB LOGGING --- Create the DB and table on start
         # Start the DQN control loop in a separate thread.
         # The `daemon=True` flag ensures the thread will exit when the main app exits.
         dqn_thread = threading.Thread(target=run_dqn_control_loop, daemon=True)

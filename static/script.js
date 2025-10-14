@@ -1,6 +1,7 @@
 // Tab switching functionality
 
 document.addEventListener('DOMContentLoaded', function() {
+    let insightsInitialized = false; // --- INSIGHTS: Flag to check if tab is initialized
     const tabs = document.querySelectorAll('.tab');
     const tabContents = document.querySelectorAll('.tab-content');
 
@@ -15,6 +16,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add active class to clicked tab and corresponding content
             this.classList.add('active');
             document.getElementById(targetTab).classList.add('active');
+
+            // --- INSIGHTS: Initialize the insights tab only on the first click ---
+            if (targetTab === 'insights' && !insightsInitialized) {
+                fetchAndRenderInsights();
+                insightsInitialized = true;
+            }
         });
     });
 

@@ -8,8 +8,11 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='components.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/traffic_signal.css') }}">
+    <!-- Add Chart.js library from a CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <script src="{{ url_for('static', filename='js/traffic_signal.js') }}"></script>
+<script src="{{ url_for('static', filename='js/insights.js') }}"></script>
 <body>
     <!-- Header -->
     <header class="header">
@@ -54,6 +57,9 @@
             </button>
             <button class="tab" data-tab="traffic-detection">
                 <i class="fas fa-eye"></i> Traffic Detection View
+            </button>
+            <button class="tab" data-tab="insights">
+                <i class="fas fa-chart-line"></i> Insights
             </button>
         </div>
     </nav>
@@ -438,6 +444,38 @@
                 </div>
             </div>
         </div>
+
+        <!-- Insights Tab -->
+        <div id="insights" class="tab-content">
+            <div class="tab-header">
+                <h2><i class="fas fa-chart-line"></i> System Performance Insights</h2>
+                <!-- Add a refresh button for the charts -->
+                <div class="tab-actions">
+                    <button class="action-btn" id="refresh-insights-btn">
+                        <i class="fas fa-sync-alt"></i> Refresh Charts
+                    </button>
+                </div>
+            </div>
+            <div id="insights-content" class="insights-grid">
+                <div class="chart-container">
+                    <h3>Average Vehicles Per Lane</h3>
+                    <canvas id="avgVehiclesChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Action Reasons Distribution</h3>
+                    <canvas id="actionReasonChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Average Green Time Per Lane (s)</h3>
+                    <canvas id="avgGreenTimeChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Average Reward Over Time</h3>
+                    <canvas id="rewardOverTimeChart"></canvas>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>

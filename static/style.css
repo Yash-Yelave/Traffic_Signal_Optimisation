@@ -1102,3 +1102,36 @@ body {
     color: #c0392b;
 }
 }
+
+/* --- Insights Tab Styles --- */
+.insights-grid {
+    display: grid;
+    /* Use a smaller minmax value for better responsiveness on smaller screens */
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 2rem;
+}
+
+.chart-container {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    /* These properties are crucial for Chart.js responsiveness */
+    position: relative;
+    height: 380px; 
+    width: 100%;
+}
+
+.chart-container h3 {
+    text-align: center;
+    margin-bottom: 1rem;
+    color: #333;
+    font-weight: 600;
+}
+
+.no-data-message {
+    color: white;
+    text-align: center;
+    font-size: 1.2rem;
+    padding: 3rem;
+}
