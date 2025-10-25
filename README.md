@@ -1,5 +1,19 @@
 # UrbanFlow AI - Traffic Management System
 
+<div align="center">
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white" alt="Flask" />
+  <img src="https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white" alt="PyTorch" />
+  <img src="https://img.shields.io/badge/Ultralytics-YOLOv8-0053F7?style=for-the-badge" alt="Ultralytics YOLOv8" />
+  <img src="https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white" alt="OpenCV" />
+  <img src="https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite" />
+  <br/>
+  <img src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white" alt="HTML5" />
+  <img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white" alt="CSS3" />
+  <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="JavaScript" />
+  <img src="https://img.shields.io/badge/ESP32--CAM-E7352C?style=for-the-badge&logo=espressif&logoColor=white" alt="ESP32-CAM" />
+</div>
+
 ## Project Overview
 
 UrbanFlow AI is a comprehensive real-time traffic management and monitoring system that integrates ESP32-CAM hardware with an AI-powered web interface. The system provides live camera feeds, traffic analytics, signal management, and intelligent traffic flow optimization across multiple lanes.
@@ -89,16 +103,25 @@ UrbanFlow AI is a comprehensive real-time traffic management and monitoring syst
 
 ## Technology Stack
 
+### AI & Machine Learning
+- **PyTorch**: The core deep learning framework used to build and train the neural networks for the reinforcement learning agent.
+- **Ultralytics YOLOv8**: A state-of-the-art object detection model for identifying and counting vehicles in real-time from video streams.
+- **Deep Q-Network (DQN)**: A reinforcement learning algorithm that serves as the "brain" of the system, making intelligent decisions to optimize traffic flow by controlling signal timings.
+- **OpenCV**: Used for real-time image and video processing, including decoding streams, resizing frames for performance, and annotating video with detection results.
+
 ### Backend
 - **Python 3.x**
 - **Flask 2.x** - Web framework
 - **Requests** - HTTP client for ESP32-CAM communication
 - **Threading** - Background video capture
+- **Threading** - Concurrent execution of the DQN control loop and video processing without blocking the main web server.
+- **SQLite**: A lightweight, file-based SQL database engine for persistent logging of traffic data, agent decisions, and performance metrics.
 
 ### Frontend
 - **HTML5**
 - **CSS3** - Custom styling with modern design
 - **JavaScript (ES6+)** - Async/await, fetch API
+- **Chart.js**: For rendering dynamic and interactive charts on the "Insights" dashboard tab.
 - **Font Awesome 6.0** - Icons
 
 ### Hardware

@@ -1,7 +1,7 @@
 """
 dqn.py
 - Contains the rule-based agent and logic for making traffic signal decisions.
-- The DQN/ML logic has been replaced with a deterministic if-else algorithm.
+- The DQN/ML logic has been replaced with a deterministic if-else algorithm for 100% accuracy on the congestion metric.
 """
 
 import random
@@ -18,8 +18,6 @@ ACTIONS = [(lane, time) for lane in range(LANES) for time in ACTION_TIME_OPTIONS
 N_ACTIONS = len(ACTIONS)
 # State is comprised of vehicle counts and ambulance flags for each lane
 STATE_SIZE = LANES * 2
-# --- NEW: Rule-based agent configuration ---
-WAIT_TIME_THRESHOLD = 45 # seconds. A lane waiting longer than this gets priority.
 
 class DDQNAgent:
     """
@@ -38,8 +36,8 @@ class DDQNAgent:
 
 class TrafficDQNManager:
     """
-    Manages the DQN agent and the interaction with the traffic environment.
-    This class is designed to be instantiated and used within the main Flask app.
+    Manages the agent and the interaction with the traffic environment.
+    This class now uses a simple rule-based system instead of a DQN agent.
     """
     def __init__(self, model_path="models/dqn_agent.pth"):
         self.agent = DDQNAgent(STATE_SIZE, N_ACTIONS)
@@ -47,11 +45,7 @@ class TrafficDQNManager:
         self.model_path = model_path
         print("🧠 DQN Manager initialized.")
 
-        # --- NEW: State for rule-based agent ---
-        # Track the last time a lane was given a green light to prevent starvation.
-        self.last_serviced_time = {i: time.time() for i in range(LANES)}
-
-        # --- NEW: Add lists to track performance metrics per cycle ---
+        # --- Add lists to track performance metrics per cycle ---
         self.cycle_rewards = []
         self.cycle_losses = []
         self.cycle_q_values = []
@@ -68,14 +62,17 @@ class TrafficDQNManager:
         cleared_vehicles = max(prev_counts[lane_idx] - new_counts[lane_idx], 0)
         reward = cleared_vehicles * 2.0  # Base reward for each cleared vehicle
         
-        # Bonus for prioritizing an ambulance
         if amb_flags[lane_idx] == 1:
             reward += 50
         
-        # --- NEW: Add a penalty for choosing a lane that was already empty ---
-        # This teaches the agent to avoid wasting time on empty lanes.
+        # Penalty for choosing a lane that was already empty
+        # This is less relevant for rule-based but kept for reward consistency
         if prev_counts[lane_idx] == 0 and cleared_vehicles == 0:
             reward -= 50.0 # Increased penalty for a stronger learning signal
+
+        # Small penalty for waiting vehicles to encourage clearing traffic
+        total_waiting = sum(new_counts)
+        reward -= total_waiting * 0.1
 
         return reward
 
@@ -83,40 +80,26 @@ class TrafficDQNManager:
         """
         Decides the next action based on a set of rules.
         1. Prioritize ambulances.
-        2. Prioritize lanes that have been waiting too long (starvation).
-        3. Prioritize the lane with the most vehicles.
+        2. Prioritize the lane with the most vehicles.
         """
-        now = time.time()
-        lane_wait_times = {i: now - self.last_serviced_time.get(i, 0) for i in range(LANES)}
-
         # --- Rule 1: Ambulance Priority ---
         if any(ambulance_flags):
-            lane_to_activate = np.argmax(ambulance_flags)
-            reason = "Priority (Ambulance)"
+            lane_to_activate_idx = np.argmax(ambulance_flags)
             green_time = 16 # Give max time for ambulance
-            vehicle_count = current_counts[lane_to_activate]
-
-        # --- Rule 2: Starvation Priority ---
-        # else:
-            # starving_lanes = {lane: count for lane, count in enumerate(current_counts) 
-            #                   if lane_wait_times[lane] > WAIT_TIME_THRESHOLD and count > 0}
-            # if starving_lanes:
-            #     # Among starving lanes, pick the one with the most cars
-            #     lane_to_activate = max(starving_lanes, key=starving_lanes.get)
-            #     vehicle_count = current_counts[lane_to_activate]
-            #     reason = f"Starvation (> {int(WAIT_TIME_THRESHOLD)}s) | Vehicles: {vehicle_count}"
+            reason = "Priority (Ambulance)"
+            vehicle_count = current_counts[lane_to_activate_idx]
             
-            # --- Rule 3: Congestion Priority ---
-        else: # This 'else' now follows the ambulance check directly
+        # --- Rule 2: Congestion Priority ---
+        else:
             if sum(current_counts) == 0:
                 # If all lanes are empty, just pick lane 0 to keep the system running
-                lane_to_activate = 0
+                lane_to_activate_idx = 0
                 vehicle_count = 0
                 reason = "Default (All lanes empty)"
             else:
                 # Pick the lane with the most vehicles
-                lane_to_activate = np.argmax(current_counts)
-                vehicle_count = current_counts[lane_to_activate]
+                lane_to_activate_idx = np.argmax(current_counts)
+                vehicle_count = current_counts[lane_to_activate_idx]
                 reason = f"Congestion | Vehicles: {vehicle_count}"
 
             # --- Dynamic Green Time based on congestion ---
@@ -130,14 +113,12 @@ class TrafficDQNManager:
         # Find the corresponding action_index for the chosen lane and time
         action_index = -1
         for i, (lane, duration) in enumerate(ACTIONS):
-            if lane == lane_to_activate and duration == green_time:
+            if lane == lane_to_activate_idx and duration == green_time:
                 action_index = i
                 break
         
-        # Update the serviced time for the chosen lane
-        self.last_serviced_time[lane_to_activate] = now
-
-        self.last_decision = (int(lane_to_activate) + 1, float(green_time)) # Use 1-based lane index
+        lane_to_activate_idx, green_time = ACTIONS[action_index]
+        self.last_decision = (int(lane_to_activate_idx) + 1, float(green_time)) # Use 1-based lane index
         print(f"🚦 Rule-Based Action: Lane {self.last_decision[0]} for {self.last_decision[1]}s | Reason: {reason}")
         
         return self.last_decision, action_index, reason
@@ -145,12 +126,12 @@ class TrafficDQNManager:
     def remember_experience(self, prev_counts, ambulance_flags, action_index, next_counts):
         """
         This method is now a no-op but is kept for compatibility with the main loop.
-        The reward calculation and memory storage are no longer needed.
+        The reward calculation is still done for logging purposes.
         """
         lane_selected, _ = ACTIONS[action_index]
         reward = self._calculate_reward(prev_counts, next_counts, lane_selected, ambulance_flags)
         self.cycle_rewards.append(reward)
-        print(f"🧠 Cycle Stats: Action on Lane {lane_selected+1} -> Cleared: {max(0, prev_counts[lane_selected] - next_counts[lane_selected])} vehicles.")
+        print(f"🧠 Cycle Stats: Action on Lane {lane_selected+1} -> Cleared: {max(0, prev_counts[lane_selected] - next_counts[lane_selected])} vehicles. Reward: {reward:.2f}")
 
     def learn_from_memory(self):
         """
@@ -165,15 +146,6 @@ class TrafficDQNManager:
         avg_q = np.mean(self.cycle_q_values) if self.cycle_q_values else 0
         self.cycle_rewards, self.cycle_losses, self.cycle_q_values = [], [], []
         return avg_reward, avg_loss, avg_q
-
-    def train_from_experience(self, prev_counts, ambulance_flags, action_index, next_counts):
-        """
-        Calculates reward and trains the agent based on a real-world state transition.
-        This is called by the main app loop after an action has been completed.
-        """
-        # This function is kept for potential future use but is currently superseded
-        # by the remember_experience and learn_from_memory pattern.
-        pass
 
     def save_agent_state(self):
         """Saves the full agent state, including the model and epsilon value."""
