@@ -10,6 +10,17 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/traffic_signal.css') }}">
     <!-- Add Chart.js library from a CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom Style Override for Tab Background -->
+    <style>
+        /* Target the "Live Camera Feed" tab content area */
+        #live-camera.tab-content {
+            /* A clean, light gray gradient background */
+            background: linear-gradient(135deg, #434343, #434343);
+            border-radius: 10px; /* Soften the corners to match the overall design */
+            padding: 20px; /* Ensure content isn't flush against the edges */
+        }
+    </style>
 </head>
 <script src="{{ url_for('static', filename='js/traffic_signal.js') }}"></script>
 <script src="{{ url_for('static', filename='js/insights.js') }}"></script>
