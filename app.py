@@ -12,24 +12,25 @@ import os # Import os module for file existence check
 import requests 
 
 # --- AI DETECTION INTEGRATION ---
-from modules.detection import VehicleDetector
+from modules.camera_manager import CameraManager
+from modules.detection import DetectionManager
 # --- END AI DETECTION INTEGRATION ---
 # --- DQN AGENT INTEGRATION ---
 from modules.insights import get_insights_data
 from modules.dqn import TrafficDQNManager
 # --- END DQN AGENT INTEGRATION ---
 
-from static.modules.traffic_signal_backend import map_lane_data_to_signal_format, set_active_green_lane, SIGNAL_STATE
-
 app = Flask(__name__)
 
 # --- AI DETECTION INTEGRATION ---
 # Initialize the YOLO detector.
 # Initialize the YOLO vehicle detector once when the application starts.
-vehicle_detector = VehicleDetector()
-# Global variable to store live counts for all lanes.
-# Initialized with zeros.
-REALTIME_DATA = {"vehicle_counts": {1: 0, 2: 0, 3: 0, 4: 0}}
+# --- DVR CAMERA SYSTEM ---
+camera_manager = CameraManager()
+detection_manager = DetectionManager(camera_manager)
+detection_manager.start()
+
+REALTIME_DATA = {"vehicle_counts": {i: 0 for i in range(1, 5)}}
 # --- END AI DETECTION INTEGRATION ---
 
 # --- DQN AGENT INTEGRATION ---
@@ -37,6 +38,8 @@ REALTIME_DATA = {"vehicle_counts": {1: 0, 2: 0, 3: 0, 4: 0}}
 # It will automatically try to load a model from the specified path on initialization.
 dqn_manager = TrafficDQNManager(model_path="models/dqn_agent.pth")
 # --- END DQN AGENT INTEGRATION ---
+
+from static.modules.traffic_signal_backend import map_lane_data_to_signal_format, set_active_green_lane, SIGNAL_STATE
 
 # ESP32-CAM IP address
 ESP32_IP = "10.44.36.86" # Restored from README, please verify this is correct
@@ -155,6 +158,11 @@ def get_unified_traffic_data():
     This function generates the core lane data that is used by both
     dashboard and lane feeds endpoints.
     """
+    # --- UPDATE VEHICLE COUNTS ---
+    # Get the latest counts from the detection manager
+    for i in range(1, 5):
+        REALTIME_DATA["vehicle_counts"][i] = detection_manager.get_vehicle_count(i)
+
     # --- FIX: Define a realistic capacity to calculate congestion ---
     # This ensures the 'traffic' metric is directly tied to the real vehicle count.
     LANE_CAPACITY = 30 # Assume a max of 30 vehicles can fit in a lane's view.
@@ -335,225 +343,16 @@ def insights_data():
     data = get_insights_data()
     return jsonify(data)
 
-def generate_frames_on_demand():
-    """
-    Establishes a connection to the ESP32-CAM stream only when a client is connected.
-    This prevents the Flask app from hogging the camera resource.
-    The connection is automatically closed when the client disconnects.
-    """
-    response = None
-    is_esp_stream_successful = False
-    try:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Client connected. Connecting to ESP32 stream...")
-        response = requests.get(ESP32_STREAM_URL, stream=True, timeout=10)
-        
-        if response.status_code == 200:
-            is_esp_stream_successful = True
-            bytes_buffer = b''
-            # Using response.iter_content to stream data
-            for chunk in response.iter_content(chunk_size=1024):
-                bytes_buffer += chunk
-                a = bytes_buffer.find(b'\xff\xd8') # JPEG start
-                b = bytes_buffer.find(b'\xff\xd9') # JPEG end
-                if a != -1 and b != -1 and b > a:
-                    jpeg_data = bytes_buffer[a:b+2]
-                    bytes_buffer = bytes_buffer[b+2:]
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + jpeg_data + b'\r\n')
-        else:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] Stream failed with HTTP status: {response.status_code}")
-    
-    except requests.exceptions.RequestException as e:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Stream connection error: {e}")
-
-    finally:
-        if response:
-            response.close() # Ensure the connection is closed
-        if is_esp_stream_successful:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] Client disconnected. ESP32 stream connection closed.")
-
-    # --- WEBCAM FALLBACK ---
-    if not is_esp_stream_successful:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] ESP32 stream failed. Attempting to fall back to webcam for raw feed.")
-        yield from generate_frames_from_webcam()
-
 @app.route('/video_feed/<int:lane_id>')
 def video_feed(lane_id):
-    """All lanes use the same ESP32 cam stream from shared capture"""
-    # --- VIDEO FILE INTEGRATION ---
-    if lane_id == 1:
-        # --- TEMP FOR TESTING: Use Lane 3 video for Lane 1 ---
-        # This section makes Lane 1 use the video file from Lane 3 for testing/dataset creation.
-        # To revert to the live ESP32 camera, comment out these lines and uncomment the "ORIGINAL CODE" block below.
-        video_path = VIDEO_FILES[3] # Use lane 3's video
-        return Response(generate_frames_from_file(video_path, lane_id),
-                        mimetype='multipart/x-mixed-replace; boundary=frame')
-        # --- END TEMP FOR TESTING ---
-        # --- ORIGINAL CODE: To use the live camera for Lane 1, uncomment the two lines below. ---
-        # return Response(generate_frames_on_demand(),
-        #                 mimetype='multipart/x-mixed-replace; boundary=frame')
-    elif lane_id in VIDEO_FILES:
-        # Other lanes use pre-recorded video files
-        video_path = VIDEO_FILES[lane_id]
-        return Response(generate_frames_from_file(video_path, lane_id),
-                        mimetype='multipart/x-mixed-replace; boundary=frame')
-    else:
-        # Handle case where lane_id is not found
-        return "Video feed not found for this lane.", 404
-    # --- END VIDEO FILE INTEGRATION ---
-
-
-@app.route('/traffic_detection_feed')
-def traffic_detection_feed():
-    """
-    This feed connects to the ESP32, passes each frame to the YOLO detector,
-    and streams the annotated video (with bounding boxes) to the client.
-    """
-    # --- AI DETECTION INTEGRATION ---
-    # --- TEMP FOR TESTING: Use Lane 3 video for the main detection feed ---
-    # This ensures the detection feed (which updates Lane 1's count) uses the same video file.
-    # To revert to the live ESP32 camera, comment out these lines and uncomment the "ORIGINAL CODE" block below.
-    video_path = VIDEO_FILES[3] # Use lane 3's video
-    return Response(generate_frames_from_file(video_path, 1), # The '1' is the lane_id
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
-    # --- END TEMP FOR TESTING ---
-    # --- ORIGINAL CODE: To use the live camera for detection, uncomment the two lines below. ---
-    # return Response(generate_detection_frames(),
-    #                 mimetype='multipart/x-mixed-replace; boundary=frame')
-    # --- END AI DETECTION INTEGRATION ---
-
-def generate_frames_from_file(video_path, lane_id):
-    """
-    Generator function that reads frames from a video file, encodes them as JPEG,
-    and yields them for streaming. It also performs vehicle detection.
-    """
-    while True: # Loop to make the video replay
-        cap = None
-        try:
-            cap = cv2.VideoCapture(video_path)
-            if not cap.isOpened():
-                print(f"[Video File] Error: Could not open video file {video_path}")
-                break # Exit the loop if file can't be opened
-            frame_count = 0 # --- FPS OPTIMIZATION: Frame counter for skipping
-
-            while True:
-                ret, frame = cap.read()
-                if not ret:
-                    break # End of video, will restart due to outer loop
-                
-                # Encode frame to JPEG bytes to pass to the detector
-                frame_count += 1
-                # --- FPS OPTIMIZATION: Process every 2nd frame to reduce load ---
-                if frame_count % 2 != 0:
-                    # For skipped frames, just yield the raw frame without detection
-                    ret, buffer = cv2.imencode('.jpg', frame)
-                    yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-                    continue
-                (flag, encoded_image) = cv2.imencode(".jpg", frame)
-                if not flag:
-                    continue
-                
-                # Process the frame with YOLO
-                vehicle_count, annotated_frame = vehicle_detector.detect_vehicles(encoded_image.tobytes())
-                REALTIME_DATA["vehicle_counts"][lane_id] = vehicle_count # Update global count for the specific lane
-
-                yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + annotated_frame + b'\r\n')
-        except Exception as e:
-            print(f"[Video File] Error streaming from {video_path}: {e}")
-        finally:
-            if cap: cap.release()
-
-def generate_detection_frames():
-    """
-    Generator function that captures frames from the ESP32 stream,
-    processes them with the VehicleDetector, and yields the annotated frames.
-    """
-    response = None
-    is_esp_stream_successful = False
-    try:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Detection client connected. Connecting to ESP32 stream...")
-        response = requests.get(ESP32_STREAM_URL, stream=True, timeout=10) # Increased timeout for more robust connection
-        if response.status_code == 200:
-            is_esp_stream_successful = True
-            bytes_buffer = b''
-            frame_count = 0 # --- FPS OPTIMIZATION: Frame counter for skipping
-            for chunk in response.iter_content(chunk_size=4096): # Increased chunk size
-                bytes_buffer += chunk
-                start = bytes_buffer.find(b'\xff\xd8') # JPEG start
-                end = bytes_buffer.find(b'\xff\xd9')   # JPEG end
-                if start != -1 and end != -1 and end > start:
-                    jpeg_bytes = bytes_buffer[start:end+2]
-                    bytes_buffer = bytes_buffer[end+2:]
-                    
-                    frame_count += 1
-                    # --- FPS OPTIMIZATION: Process every 2nd frame to reduce load ---
-                    if frame_count % 2 != 0:
-                        # For skipped frames, just yield the raw frame without detection
-                        yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + jpeg_bytes + b'\r\n')
-                        continue
-
-                    # Process the frame with YOLO
-                    vehicle_count, annotated_frame = vehicle_detector.detect_vehicles(jpeg_bytes)
-                    REALTIME_DATA["vehicle_counts"][1] = vehicle_count # Update global count for Lane 1
-
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + annotated_frame + b'\r\n')
-        else:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] Detection stream failed with HTTP status: {response.status_code}")
-
-    except requests.exceptions.RequestException as e:
-        print(f"[Detection Feed] Stream connection error: {e}")
-    finally:
-        if response:
-            response.close()
-        if is_esp_stream_successful:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] Detection client disconnected. ESP32 stream closed.")
-
-    # --- WEBCAM FALLBACK ---
-    if not is_esp_stream_successful:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] ESP32 detection stream failed. Attempting to fall back to webcam.")
-        yield from generate_detection_frames_from_webcam()
-
-def generate_frames_from_webcam():
-    """Generator for streaming raw frames from the local webcam."""
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        print("[Webcam] Error: Could not open webcam for raw feed.")
-        return
-    try:
+    def gen():
         while True:
-            ret, frame = cap.read()
-            if not ret: break
-            ret, buffer = cv2.imencode('.jpg', frame)
-            if not ret: continue
-            yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-    finally:
-        cap.release()
-        print("[Webcam] Raw feed webcam released.")
-
-def generate_detection_frames_from_webcam():
-    """Generator for streaming YOLO-processed frames from the local webcam."""
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        print("[Webcam] Error: Could not open webcam for detection.")
-        return
-    try:
-        while True:
-            ret, frame = cap.read()
-            if not ret: break
-            
-            # FIX: The frame must be encoded to JPEG bytes before being passed to the detector,
-            # just like in the generate_frames_from_file function.
-            (flag, encoded_image) = cv2.imencode(".jpg", frame)
-            if not flag:
+            annotated = detection_manager.get_annotated_frame(lane_id)
+            if annotated is None:
+                time.sleep(0.05)
                 continue
-            vehicle_count, annotated_frame = vehicle_detector.detect_vehicles(encoded_image.tobytes())
-            REALTIME_DATA["vehicle_counts"][1] = vehicle_count
-
-            yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + annotated_frame + b'\r\n')
-    finally:
-        cap.release()
-        print("[Webcam] Detection feed webcam released.")
+            yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + annotated + b'\r\n')
+    return Response(gen(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/api/set_signal', methods=['POST'])
 def set_signal_from_ai():

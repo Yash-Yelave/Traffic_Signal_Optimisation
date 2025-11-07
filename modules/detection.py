@@ -9,6 +9,11 @@ import numpy as np
 from ultralytics import YOLO
 import torch
 
+import threading, time
+from config import YOLO_MODEL, NUM_LANES
+from modules.camera_manager import CameraManager
+
+
 class VehicleDetector:
     """
     A class to handle vehicle detection using a YOLO model.
@@ -119,3 +124,36 @@ class VehicleDetector:
         except Exception as e:
             print(f"[Detection] Error encoding frame: {e}")
             return vehicle_count, frame_bytes
+
+class DetectionManager:
+    """
+    Runs VehicleDetector on multiple camera feeds asynchronously.
+    """
+    def __init__(self, camera_manager: CameraManager):
+        self.camera_manager = camera_manager
+        self.detector = VehicleDetector(YOLO_MODEL)
+        self.running = False
+        self.results = {i: {"count": 0, "frame": None} for i in range(1, NUM_LANES + 1)}
+
+    def start(self):
+        self.running = True
+        threading.Thread(target=self._loop, daemon=True).start()
+
+    def _loop(self):
+        while self.running:
+            for cam_id in range(1, NUM_LANES + 1):
+                frame = self.camera_manager.get_frame(cam_id)
+                if frame is None:
+                    continue
+                ret, buffer = cv2.imencode(".jpg", frame)
+                if not ret:
+                    continue
+                count, annotated = self.detector.detect_vehicles(buffer.tobytes())
+                self.results[cam_id] = {"count": count, "frame": annotated}
+            time.sleep(0.1)
+
+    def get_annotated_frame(self, cam_id):
+        return self.results.get(cam_id, {}).get("frame")
+
+    def get_vehicle_count(self, cam_id):
+        return self.results.get(cam_id, {}).get("count", 0)
