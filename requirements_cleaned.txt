@@ -1,0 +1,66 @@
+# First run this 
+# pip install torch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cu121
+
+# pip install -r requirements.txt
+
+# ==============================================================================
+# == AI Traffic Signal Optimization Project - requirements.txt
+# ==============================================================================
+#
+# NOTE: PyTorch must be installed separately with the CUDA-specific command.
+
+# --- YOLO Object Detection ---
+# A recent and stable release of Ultralytics with full support for YOLOv11
+# and proven compatibility with PyTorch 2.1.
+ultralytics==8.3.209
+
+# --- Computer Vision ---
+# Using the '-contrib-' version guarantees that all necessary modules for GUI
+# operations (like cv2.imshow) are included, preventing common errors.
+# Version 4.8 is a stable release known to work well with this stack.
+# opencv-contrib-python==4.8.1.78
+
+# --- Data, Reinforcement Learning & Visualization ---
+# The fundamental package for numerical operations, version-locked for PyTorch.
+# numpy==1.26.4
+
+# The standard toolkit for developing reinforcement learning environments.
+gymnasium==0.29.1
+
+# A stable version for creating static, animated, and interactive visualizations.
+matplotlib==3.8.0
+
+# --- Backend Web Server & Communication ---
+# A modern and stable version of the Flask web framework.
+Flask==3.0.0
+
+# Core dependencies for Flask, pinned for maximum stability.
+Jinja2==3.1.3
+Werkzeug==3.0.1
+
+# A production-ready web server for Flask, ideal for Windows development.
+waitress==2.1.2
+
+# A production-ready web server, the standard for Linux/macOS deployment.
+# gunicorn==21.2.0
+
+# For real-time, two-way communication (live dashboard). Stable versions.
+Flask-SocketIO==5.3.6
+python-engineio==4.9.0
+python-socketio==5.11.1
+simple-websocket==0.10.0
+
+# Standard library for serial communication with ESP32/Arduino.
+pyserial==3.5
+
+# --- Utilities & Command-Line Tools ---
+# A stable version for making HTTP requests.
+requests==2.31.0
+
+# For creating rich, beautiful formatting in the terminal output.
+rich==13.7.0
+
+# Pinning protobuf to a late 3.x version is a common practice to ensure
+# compatibility with many pre-trained models and libraries.
+protobuf==3.20.3
+
